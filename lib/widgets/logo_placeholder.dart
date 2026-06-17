@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../constants/asset_paths.dart';
+import 'app_logo.dart';
 
+/// Full-screen branded placeholder while content loads (matches native splash).
 class LogoPlaceholder extends StatelessWidget {
-  const LogoPlaceholder({super.key, this.height = 120});
+  const LogoPlaceholder({super.key, this.height = 160});
 
   final double height;
 
@@ -12,11 +13,7 @@ class LogoPlaceholder extends StatelessWidget {
     return Container(
       color: Colors.white,
       alignment: Alignment.center,
-      child: Image.asset(
-        AssetPaths.splashLogo,
-        height: height,
-        fit: BoxFit.contain,
-      ),
+      child: AppLogo(height: height),
     );
   }
 }
