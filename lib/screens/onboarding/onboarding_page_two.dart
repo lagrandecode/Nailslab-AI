@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/asset_paths.dart';
+import '../../constants/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
 class OnboardingPageTwo extends StatelessWidget {
@@ -36,7 +37,7 @@ class OnboardingPageTwo extends StatelessWidget {
                   borderRadius: BorderRadius.circular(27),
                 ),
               ),
-              child: const Text('Continue'),
+              child: Text(AppStrings.continueLabel),
             ),
           ),
         ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../constants/asset_paths.dart';
+import '../../constants/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
 class OnboardingPageOne extends StatefulWidget {
@@ -252,7 +253,7 @@ class _ContinueButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(27),
           ),
         ),
-        child: const Text('Continue'),
+        child: Text(AppStrings.continueLabel),
       ),
     );
   }

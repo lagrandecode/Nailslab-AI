@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/language_selector_button.dart';
 import 'onboarding_page_one.dart';
 import 'onboarding_page_two.dart';
 
@@ -39,13 +40,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (index) => setState(() => _currentPage = index),
+      body: Stack(
         children: [
-          OnboardingPageOne(onContinue: _goToNextPage),
-          OnboardingPageTwo(onContinue: widget.onFinished),
+          PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            children: [
+              OnboardingPageOne(onContinue: _goToNextPage),
+              OnboardingPageTwo(onContinue: widget.onFinished),
+            ],
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, right: 16),
+                child: const LanguageSelectorButton(compact: true),
+              ),
+            ),
+          ),
         ],
       ),
     );
