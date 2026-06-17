@@ -35,10 +35,6 @@ class OnboardingPageTwo extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(27),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
               child: const Text('Continue'),
             ),

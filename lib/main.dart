@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/theme/app_theme.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'widgets/haptic_scope.dart';
 import 'widgets/logo_placeholder.dart';
@@ -17,11 +18,7 @@ class NailLabApp extends StatelessWidget {
     return MaterialApp(
       title: 'NailLab AI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE91E8C)),
-        scaffoldBackgroundColor: Colors.white,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light(),
       builder: (context, child) => HapticScope(child: child ?? const SizedBox.shrink()),
       home: const _AppRoot(),
     );
