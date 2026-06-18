@@ -16,7 +16,7 @@ class HandTraceOverlay extends StatelessWidget {
   final double height;
   final double scale;
 
-  static const double _aspectRatio = 1024 / 1536;
+  static const double _aspectRatio = 400 / 600;
 
   @override
   Widget build(BuildContext context) {
