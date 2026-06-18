@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
 
-import '../../constants/asset_paths.dart';
 import '../../constants/app_strings.dart';
+import '../../constants/asset_paths.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/animated_onboarding_headline.dart';
 
-class OnboardingPageTwo extends StatelessWidget {
+class OnboardingPageTwo extends StatefulWidget {
   const OnboardingPageTwo({super.key, required this.onContinue});
 
   final VoidCallback onContinue;
+
+  @override
+  State<OnboardingPageTwo> createState() => _OnboardingPageTwoState();
+}
+
+class _OnboardingPageTwoState extends State<OnboardingPageTwo> {
+  bool _showHeadline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _showHeadline = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +40,10 @@ class OnboardingPageTwo extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: Alignment.center,
         ),
+        OnboardingHeadlineOverlay(
+          headline: () => AppStrings.onboardingTwoHeadline,
+          play: _showHeadline,
+        ),
         Positioned(
           left: 24,
           right: 24,
@@ -29,7 +52,7 @@ class OnboardingPageTwo extends StatelessWidget {
             width: double.infinity,
             height: 54,
             child: FilledButton(
-              onPressed: onContinue,
+              onPressed: widget.onContinue,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

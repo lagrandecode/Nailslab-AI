@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import '../../constants/asset_paths.dart';
 import '../../constants/app_strings.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/animated_onboarding_headline.dart';
 
 class OnboardingPageOne extends StatefulWidget {
   const OnboardingPageOne({super.key, required this.onContinue});
@@ -19,8 +20,9 @@ class OnboardingPageOne extends StatefulWidget {
 }
 
 class _OnboardingPageOneState extends State<OnboardingPageOne>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const Duration _videoStartOffset = Duration(seconds: 1);
+  static const Duration _headlineDelay = Duration(seconds: 2);
   static const Duration _confettiDelay = Duration(seconds: 2);
   static const Duration _buttonDelay = Duration(seconds: 3);
 
@@ -31,8 +33,10 @@ class _OnboardingPageOneState extends State<OnboardingPageOne>
 
   VideoPlayerController? _videoController;
   bool _videoReady = false;
+  bool _showHeadline = false;
   bool _showConfetti = false;
   bool _showButton = false;
+  Timer? _headlineTimer;
   Timer? _confettiTimer;
   Timer? _buttonTimer;
   bool _isLooping = false;
@@ -124,8 +128,16 @@ class _OnboardingPageOneState extends State<OnboardingPageOne>
   }
 
   void _scheduleOverlays() {
+    _headlineTimer?.cancel();
     _confettiTimer?.cancel();
     _buttonTimer?.cancel();
+
+    _headlineTimer = Timer(_headlineDelay, () {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _showHeadline = true);
+    });
 
     _confettiTimer = Timer(_confettiDelay, () {
       if (!mounted) {
@@ -146,6 +158,7 @@ class _OnboardingPageOneState extends State<OnboardingPageOne>
 
   @override
   void dispose() {
+    _headlineTimer?.cancel();
     _confettiTimer?.cancel();
     _buttonTimer?.cancel();
     _videoController?.removeListener(_onVideoTick);
@@ -164,6 +177,10 @@ class _OnboardingPageOneState extends State<OnboardingPageOne>
           _FullscreenVideo(controller: _videoController!)
         else
           const ColoredBox(color: Colors.black),
+        OnboardingHeadlineOverlay(
+          headline: () => AppStrings.onboardingOneHeadline,
+          play: _showHeadline,
+        ),
         if (_showConfetti)
           Positioned.fill(
             child: IgnorePointer(
