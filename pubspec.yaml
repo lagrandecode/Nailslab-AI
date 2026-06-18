@@ -92,6 +92,7 @@ flutter:
 
   assets:
     - .env
+    - assets/hand_trace_left.png
     - assets/data/nail_styles.json
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4

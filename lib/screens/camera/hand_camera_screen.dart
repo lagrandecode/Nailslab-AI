@@ -6,7 +6,7 @@ import '../../constants/try_on_strings.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/language_service.dart';
-import '../../widgets/hand_trace_painter.dart';
+import '../../widgets/hand_trace_overlay.dart';
 
 class HandCameraScreen extends StatefulWidget {
   const HandCameraScreen({super.key});
@@ -146,19 +146,17 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
               ),
               if (_showGuide)
                 Center(
-                  child: Transform.scale(
+                  child: HandTraceOverlay(
+                    isLeftHand: _isLeftHand,
+                    height: MediaQuery.sizeOf(context).height * 0.50,
                     scale: _guideScale,
-                    child: CustomPaint(
-                      painter: HandTracePainter(isLeftHand: _isLeftHand),
-                      size: const Size(260, 340),
-                    ),
                   ),
                 ),
               if (_showGuide)
                 Positioned(
                   left: 48,
                   right: 48,
-                  bottom: 28,
+                  bottom: MediaQuery.sizeOf(context).height * 0.22,
                   child: _GuideScaleSlider(
                     value: _guideScale,
                     onChanged: (value) => setState(() => _guideScale = value),
