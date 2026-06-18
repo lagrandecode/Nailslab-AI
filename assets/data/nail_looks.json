@@ -1,0 +1,13 @@
+{
+  "looks": [
+    {
+      "id": "geometric",
+      "name": "Geometric",
+      "overlay": "assets/looks/geometric.png",
+      "thumbnail": "assets/looks/geometric.png",
+      "crop_bottom": 0.22,
+      "offset_y": -0.04,
+      "sort_order": 1
+    }
+  ]
+}

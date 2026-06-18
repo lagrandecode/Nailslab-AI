@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../constants/try_on_strings.dart';
+import '../../core/camera/hand_guide_layout.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/nail_look.dart';
 import '../../services/language_service.dart';
+import '../../services/nail_look_repository.dart';
+import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
+import '../../widgets/nail_look_overlay.dart';
 
 class HandCameraScreen extends StatefulWidget {
   const HandCameraScreen({super.key});
@@ -16,18 +21,31 @@ class HandCameraScreen extends StatefulWidget {
 }
 
 class _HandCameraScreenState extends State<HandCameraScreen> {
+  final _lookRepository = NailLookRepository.instance;
+
   CameraController? _controller;
   bool _ready = false;
+  bool _looksLoaded = false;
   bool _showGuide = true;
   bool _isLeftHand = true;
   bool _capturing = false;
   double _guideScale = 1.0;
   String? _errorMessage;
+  CameraPanelTab _activeTab = CameraPanelTab.looks;
+  NailLook? _selectedLook;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _lookRepository.ensureLoaded();
+    if (mounted) {
+      setState(() => _looksLoaded = true);
+    }
+    await _initCamera();
   }
 
   Future<void> _initCamera() async {
@@ -96,6 +114,22 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     }
   }
 
+  void _onTabChanged(CameraPanelTab tab) {
+    setState(() {
+      _activeTab = tab;
+      if (tab != CameraPanelTab.looks) {
+        _selectedLook = null;
+      }
+    });
+  }
+
+  void _onLookSelected(NailLook look) {
+    setState(() {
+      _activeTab = CameraPanelTab.looks;
+      _selectedLook = look;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -110,6 +144,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   Widget _buildBody() {
     final controller = _controller;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
 
     return Column(
       children: [
@@ -144,11 +180,20 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                   ],
                 ),
               ),
+              if (_selectedLook != null && _activeTab == CameraPanelTab.looks)
+                Center(
+                  child: NailLookOverlay(
+                    look: _selectedLook!,
+                    isLeftHand: _isLeftHand,
+                    height: guideHeight,
+                    scale: _guideScale,
+                  ),
+                ),
               if (_showGuide)
                 Center(
                   child: HandTraceOverlay(
                     isLeftHand: _isLeftHand,
-                    height: MediaQuery.sizeOf(context).height * 0.54,
+                    height: guideHeight,
                     scale: _guideScale,
                   ),
                 ),
@@ -156,39 +201,54 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                 Positioned(
                   left: 48,
                   right: 48,
-                  bottom: MediaQuery.sizeOf(context).height * 0.22,
+                  bottom: 16,
                   child: _GuideScaleSlider(
                     value: _guideScale,
                     onChanged: (value) => setState(() => _guideScale = value),
                   ),
                 ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 12,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 72),
+                    Expanded(
+                      child: Center(
+                        child: _ShutterButton(
+                          enabled: _ready && !_capturing,
+                          onPressed: _capture,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 72,
+                      child: _HandToggle(
+                        isLeftHand: _isLeftHand,
+                        onTap: () => setState(() => _isLeftHand = !_isLeftHand),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        Container(
-          color: Colors.white,
-          padding: EdgeInsets.fromLTRB(24, 18, 24, bottomInset + 18),
-          child: Row(
-            children: [
-              const SizedBox(width: 72),
-              Expanded(
-                child: Center(
-                  child: _ShutterButton(
-                    enabled: _ready && !_capturing,
-                    onPressed: _capture,
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 72,
-                child: _HandToggle(
-                  isLeftHand: _isLeftHand,
-                  onTap: () => setState(() => _isLeftHand = !_isLeftHand),
-                ),
-              ),
-            ],
+        if (_looksLoaded)
+          CameraBottomPanel(
+            activeTab: _activeTab,
+            looks: _lookRepository.all,
+            selectedLookId: _selectedLook?.id,
+            onTabChanged: _onTabChanged,
+            onLookSelected: _onLookSelected,
+          )
+        else
+          const SizedBox(
+            height: 140,
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
           ),
-        ),
+        SizedBox(height: bottomInset),
       ],
     );
   }
@@ -372,7 +432,7 @@ class _HandToggle extends StatelessWidget {
           Transform(
             alignment: Alignment.center,
             transform: Matrix4.diagonal3Values(isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
-            child: const Icon(Icons.back_hand_outlined, color: AppColors.primary, size: 28),
+            child: const Icon(Icons.back_hand_outlined, color: Colors.white, size: 28),
           ),
           const SizedBox(height: 4),
           ListenableBuilder(
@@ -381,7 +441,7 @@ class _HandToggle extends StatelessWidget {
               isLeftHand ? TryOnStrings.leftHand : TryOnStrings.rightHand,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: AppColors.primary,
+                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),

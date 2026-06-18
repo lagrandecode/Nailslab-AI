@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../core/camera/hand_guide_layout.dart';
 import '../constants/asset_paths.dart';
 
 /// Hand camera guide from bundled SVG asset.
@@ -16,7 +17,7 @@ class HandTraceOverlay extends StatelessWidget {
   final double height;
   final double scale;
 
-  static const double _aspectRatio = 400 / 600;
+  static const double _aspectRatio = HandGuideLayout.aspectRatio;
 
   @override
   Widget build(BuildContext context) {

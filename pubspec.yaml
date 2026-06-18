@@ -94,6 +94,8 @@ flutter:
   assets:
     - .env
     - assets/data/nail_styles.json
+    - assets/data/nail_looks.json
+    - assets/looks/
     - assets/2xJa86J01.svg
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
