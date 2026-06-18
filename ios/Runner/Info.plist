@@ -66,6 +66,8 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>NSCameraUsageDescription</key>
+		<string>NailLab AI needs camera access so you can snap a photo of your hand and try nail styles.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

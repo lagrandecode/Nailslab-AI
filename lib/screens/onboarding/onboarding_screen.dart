@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/language_selector_button.dart';
 import 'onboarding_page_one.dart';
 import 'onboarding_page_two.dart';
+import 'onboarding_try_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onFinished});
@@ -17,7 +18,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  static const _pageCount = 2;
+  static const _pageCount = 3;
 
   @override
   void dispose() {
@@ -48,7 +49,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onPageChanged: (index) => setState(() => _currentPage = index),
             children: [
               OnboardingPageOne(onContinue: _goToNextPage),
-              OnboardingPageTwo(onContinue: widget.onFinished),
+              OnboardingPageTwo(onContinue: _goToNextPage),
+              OnboardingTryScreen(onFinished: widget.onFinished),
             ],
           ),
           SafeArea(

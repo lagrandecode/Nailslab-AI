@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'constants/app_strings.dart';
@@ -10,6 +11,11 @@ import 'widgets/logo_placeholder.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Optional in dev; use --dart-define=OPENAI_API_KEY when .env is absent.
+  }
   await LanguageService.instance.ensureLoaded();
   runApp(const NailLabApp());
 }

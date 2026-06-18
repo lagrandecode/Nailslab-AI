@@ -9,11 +9,13 @@ class AnimatedOnboardingHeadline extends StatefulWidget {
     required this.text,
     required this.play,
     this.alignment = TextAlign.center,
+    this.lightBackground = false,
   });
 
   final String text;
   final bool play;
   final TextAlign alignment;
+  final bool lightBackground;
 
   @override
   State<AnimatedOnboardingHeadline> createState() =>
@@ -73,18 +75,20 @@ class _AnimatedOnboardingHeadlineState extends State<AnimatedOnboardingHeadline>
         child: Text(
           widget.text,
           textAlign: widget.alignment,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 30,
             fontWeight: FontWeight.w700,
             height: 1.15,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Color(0x99000000),
-                blurRadius: 16,
-                offset: Offset(0, 2),
-              ),
-            ],
+            color: widget.lightBackground ? const Color(0xFF2D2D2D) : Colors.white,
+            shadows: widget.lightBackground
+                ? null
+                : const [
+                    Shadow(
+                      color: Color(0x99000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
           ),
         ),
       ),

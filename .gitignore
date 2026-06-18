@@ -46,3 +46,6 @@ app.*.map.json
 
 # Machine-specific Android SDK paths
 /android/local.properties
+
+# Secrets — never commit
+.env

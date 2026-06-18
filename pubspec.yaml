@@ -40,6 +40,10 @@ dependencies:
   confetti: ^0.8.0
   intl: ^0.20.2
   shared_preferences: ^2.5.3
+  flutter_dotenv: ^5.2.1
+  image_picker: ^1.1.2
+  http: ^1.4.0
+  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:
@@ -86,6 +90,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
     - assets/image1.png
