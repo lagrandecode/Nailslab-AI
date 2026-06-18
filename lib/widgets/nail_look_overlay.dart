@@ -1,10 +1,13 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../core/camera/hand_guide_layout.dart';
 import '../models/nail_look.dart';
+import '../services/nail_look_image_cache.dart';
 
-/// Live nail art overlay aligned to the hand guide (black PNG bg keyed via screen blend).
-class NailLookOverlay extends StatelessWidget {
+/// Static nail look overlay (fallback when hand is not detected yet).
+class NailLookOverlay extends StatefulWidget {
   const NailLookOverlay({
     super.key,
     required this.look,
@@ -19,35 +22,58 @@ class NailLookOverlay extends StatelessWidget {
   final double scale;
 
   @override
+  State<NailLookOverlay> createState() => _NailLookOverlayState();
+}
+
+class _NailLookOverlayState extends State<NailLookOverlay> {
+  ui.Image? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOverlay();
+  }
+
+  @override
+  void didUpdateWidget(NailLookOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.look.overlayAsset != widget.look.overlayAsset) {
+      _loadOverlay();
+    }
+  }
+
+  Future<void> _loadOverlay() async {
+    final image = await NailLookImageCache.instance.load(widget.look);
+    if (mounted) {
+      setState(() => _image = image);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final width = height * HandGuideLayout.aspectRatio;
-    final visibleHeight = height * (1 - look.cropBottomFraction);
-    final offsetY = look.offsetY * height;
+    final image = _image;
+    if (image == null) {
+      return const SizedBox.shrink();
+    }
+
+    final width = widget.height * HandGuideLayout.aspectRatio;
+    final offsetY = widget.look.offsetY * widget.height;
 
     return Transform.scale(
-      scale: scale,
+      scale: widget.scale,
       child: Transform.translate(
         offset: Offset(0, offsetY),
         child: Transform(
           alignment: Alignment.center,
-          transform: Matrix4.diagonal3Values(isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
+          transform: Matrix4.diagonal3Values(widget.isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
           child: SizedBox(
             width: width,
-            height: visibleHeight,
-            child: ClipRect(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Image.asset(
-                  look.overlayAsset,
-                  width: width,
-                  height: height,
-                  fit: BoxFit.contain,
-                  alignment: Alignment.topCenter,
-                  color: Colors.white,
-                  colorBlendMode: BlendMode.screen,
-                  filterQuality: FilterQuality.high,
-                ),
-              ),
+            height: widget.height,
+            child: RawImage(
+              image: image,
+              fit: BoxFit.contain,
+              alignment: Alignment.topCenter,
+              filterQuality: FilterQuality.high,
             ),
           ),
         ),

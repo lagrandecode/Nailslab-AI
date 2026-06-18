@@ -43,6 +43,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   camera: ^0.11.2
   flutter_svg: ^2.2.0
+  hand_detection: ^3.1.2
   http: ^1.4.0
   http_parser: ^4.1.2
   image: ^4.8.0

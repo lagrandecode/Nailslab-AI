@@ -186,6 +186,40 @@ abstract final class TryOnStrings {
     },
   );
 
+  static String get holdHandHint => _t(
+    'Hold your hand in view — nails follow your fingers',
+    {
+      'zh': '将手保持在画面中 — 美甲会跟随手指',
+      'hi': 'अपना हाथ फ्रेम में रखें — नेल आपकी उंगलियों पर दिखेंगे',
+      'es': 'Mantén la mano a la vista — las uñas siguen tus dedos',
+      'fr': 'Gardez la main visible — les ongles suivent vos doigts',
+      'de': 'Halte deine Hand im Bild — Nägel folgen deinen Fingern',
+      'ru': 'Держите руку в кадре — маникюр следует за пальцами',
+      'pt': 'Mantenha a mão visível — as unhas seguem os dedos',
+      'it': 'Tieni la mano in vista — le unghie seguono le dita',
+      'ro': 'Ține mâna în cadru — unghiile urmează degetele',
+      'nl': 'Houd je hand in beeld — nagels volgen je vingers',
+      'ar': 'أبقِ يدك في الإطار — الأظافر تتبع أصابعك',
+    },
+  );
+
+  static String get detectingHandHint => _t(
+    'Show your palm to the camera',
+    {
+      'zh': '将手掌对准相机',
+      'hi': 'अपनी हथेली कैमरे की ओर करें',
+      'es': 'Muestra la palma a la cámara',
+      'fr': 'Montrez votre paume à la caméra',
+      'de': 'Zeige deine Handfläche zur Kamera',
+      'ru': 'Покажите ладонь камере',
+      'pt': 'Mostre a palma da mão à câmara',
+      'it': 'Mostra il palmo alla fotocamera',
+      'ro': 'Arată palma spre cameră',
+      'nl': 'Toon je handpalm aan de camera',
+      'ar': 'وجّه راحة يدك نحو الكاميرا',
+    },
+  );
+
   static String get leftHand => _t('Left hand', {
     'zh': '左手',
     'hi': 'बायां हाथ',
