@@ -93,6 +93,8 @@ flutter:
   assets:
     - .env
     - assets/data/nail_styles.json
+    - assets/hand2.png
+    - assets/hand_trace.png
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
     - assets/image1.png

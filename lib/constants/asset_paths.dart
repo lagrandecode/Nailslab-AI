@@ -4,6 +4,7 @@ abstract final class AssetPaths {
 
   static const String onboardingVideo1 = 'assets/videos/onboard1.mp4';
   static const String onboardingImage2 = 'assets/image1.png';
+  static const String handTrace = 'assets/hand_trace.png';
 
   static const List<String> allImages = [logo];
 }

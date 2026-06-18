@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'hand_trace_painter.dart';
+import '../constants/asset_paths.dart';
 
-/// Vector hand guide for the camera overlay.
+/// User-drawn hand guide for the camera overlay.
 class HandTraceOverlay extends StatelessWidget {
   const HandTraceOverlay({
     super.key,
@@ -15,7 +15,7 @@ class HandTraceOverlay extends StatelessWidget {
   final double height;
   final double scale;
 
-  static const double _aspectRatio = 0.58;
+  static const double _aspectRatio = 621 / 897;
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +23,16 @@ class HandTraceOverlay extends StatelessWidget {
 
     return Transform.scale(
       scale: scale,
-      child: CustomPaint(
-        painter: HandTracePainter(isLeftHand: isLeftHand),
-        size: Size(width, height),
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.diagonal3Values(isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
+        child: Image.asset(
+          AssetPaths.handTrace,
+          width: width,
+          height: height,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
       ),
     );
   }
