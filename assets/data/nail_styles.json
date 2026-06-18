@@ -1,0 +1,516 @@
+{
+  "categories": [
+    {
+      "id": "baddie",
+      "name": "Baddie Collection",
+      "sort_order": 1
+    },
+    {
+      "id": "luxury",
+      "name": "Luxury Collection",
+      "sort_order": 2
+    },
+    {
+      "id": "multicolor",
+      "name": "Multicolor Collection",
+      "sort_order": 3
+    },
+    {
+      "id": "cute",
+      "name": "Cute Collection",
+      "sort_order": 4
+    },
+    {
+      "id": "trendy",
+      "name": "Trendy Collection",
+      "sort_order": 5
+    },
+    {
+      "id": "seasonal",
+      "name": "Seasonal Collection",
+      "sort_order": 6
+    }
+  ],
+  "styles": [
+    {
+      "id": 1,
+      "name": "Baddie Pink",
+      "category": "baddie",
+      "shape": "Long Coffin",
+      "thumbnail_url": "",
+      "prompt": "Luxury coffin-shaped gel polish in glossy pink with rhinestones and glitter accents. Trendy baddie style. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 2,
+      "name": "Hot Girl Red",
+      "category": "baddie",
+      "shape": "Stiletto",
+      "thumbnail_url": "",
+      "prompt": "Stiletto-shaped gel polish in glossy candy red with chrome shine. Bold sexy manicure. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 3,
+      "name": "Barbie Glam",
+      "category": "baddie",
+      "shape": "Long Coffin",
+      "thumbnail_url": "",
+      "prompt": "Barbie-inspired coffin-shaped gel polish in hot pink with white tips, rhinestones and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 3
+    },
+    {
+      "id": 4,
+      "name": "Pink Chrome",
+      "category": "baddie",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Almond-shaped gel polish with mirror pink chrome finish and holographic shine. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 5,
+      "name": "Black Queen",
+      "category": "baddie",
+      "shape": "Stiletto",
+      "thumbnail_url": "",
+      "prompt": "Glossy black stiletto-shaped gel polish with gold accents and crystal details. Bold queen energy. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 6,
+      "name": "Diamond Babe",
+      "category": "baddie",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish in nude pink base covered with diamond rhinestones and glitter. Luxury baddie look. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 7,
+      "name": "Money Green",
+      "category": "baddie",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish in rich emerald green with gold foil flakes and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 8,
+      "name": "Rich Girl",
+      "category": "baddie",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Luxury almond-shaped gel polish in champagne nude with gold chrome tips and rhinestone accents. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    },
+    {
+      "id": 9,
+      "name": "Golden Luxe",
+      "category": "luxury",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Nude coffin-shaped gel polish with gold chrome tips and luxury rhinestone accents. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 10,
+      "name": "Rose Gold",
+      "category": "luxury",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Elegant almond-shaped gel polish with rose gold chrome mirror finish and soft shimmer. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 11,
+      "name": "Silver Chrome",
+      "category": "luxury",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish with liquid silver chrome finish and high-gloss mirror shine. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 3
+    },
+    {
+      "id": 12,
+      "name": "White Diamond",
+      "category": "luxury",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Pearl white almond nails with crystal rhinestones and diamond sparkle accents. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 13,
+      "name": "Royal Blue",
+      "category": "luxury",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish in deep royal blue with gold foil details and glossy salon finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 14,
+      "name": "Emerald Queen",
+      "category": "luxury",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Emerald green almond-shaped gel polish with gold foil and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 15,
+      "name": "Matte Luxe",
+      "category": "luxury",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Luxury matte almond-shaped gel polish in nude and burgundy with elegant minimalist style. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 16,
+      "name": "Champagne Glow",
+      "category": "luxury",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish in sheer champagne with subtle gold shimmer and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    },
+    {
+      "id": 17,
+      "name": "Rainbow Tips",
+      "category": "multicolor",
+      "shape": "Square",
+      "thumbnail_url": "",
+      "prompt": "Square-shaped gel polish with rainbow french tips in vibrant colors and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 18,
+      "name": "Neon Vibes",
+      "category": "multicolor",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Bright neon multicolor coffin-shaped gel polish with abstract swirls and glossy texture. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 19,
+      "name": "Pastel Dream",
+      "category": "multicolor",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Pastel almond-shaped gel polish in soft pink, blue and lavender marble design. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 3
+    },
+    {
+      "id": 20,
+      "name": "Chrome Mix",
+      "category": "multicolor",
+      "shape": "Stiletto",
+      "thumbnail_url": "",
+      "prompt": "Stiletto-shaped gel polish with mixed chrome colors including silver, pink and blue. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 21,
+      "name": "Sunset Glow",
+      "category": "multicolor",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Almond-shaped gel polish with sunset ombre gradient in orange, pink and purple with glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 22,
+      "name": "Color Splash",
+      "category": "multicolor",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish with bold paint-splash art in multiple bright colors on white base. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 23,
+      "name": "Purple Vibes",
+      "category": "multicolor",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Almond-shaped gel polish with metallic purple chrome finish and sparkly accents. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 24,
+      "name": "Blue Ice",
+      "category": "multicolor",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish with icy blue chrome, glitter flakes and crystal shine. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    },
+    {
+      "id": 25,
+      "name": "Cherry Bomb",
+      "category": "cute",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Cherry-themed coffin-shaped gel polish with red cherries and glossy nude base. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 26,
+      "name": "Heart Throb",
+      "category": "cute",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Romantic coffin-shaped gel polish with red hearts, pink shades and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 27,
+      "name": "Floral Babe",
+      "category": "cute",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Cute almond-shaped gel polish with hand-painted flowers, soft pink base and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 3
+    },
+    {
+      "id": 28,
+      "name": "Butterfly Kiss",
+      "category": "cute",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Soft almond-shaped gel polish with pastel butterfly decals and shimmer on a baby pink base. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 29,
+      "name": "Strawberry Milk",
+      "category": "cute",
+      "shape": "Square",
+      "thumbnail_url": "",
+      "prompt": "Square-shaped gel polish in milky strawberry pink with tiny white dots and glossy cute finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 30,
+      "name": "Candy Pop",
+      "category": "cute",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Playful almond-shaped gel polish in candy colors with polka dots and glossy pop-art style. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 31,
+      "name": "Tropical Vibes",
+      "category": "cute",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Tropical almond-shaped gel polish with palm leaves, flowers and vibrant summer colors. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 32,
+      "name": "Cloud Nine",
+      "category": "cute",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Dreamy almond-shaped gel polish with fluffy cloud art on sky blue and white glossy base. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    },
+    {
+      "id": 33,
+      "name": "Y2K Glam",
+      "category": "trendy",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Y2K coffin-shaped gel polish with glitter, gems, butterflies and shiny pink tones. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 34,
+      "name": "Animal Print",
+      "category": "trendy",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish featuring leopard print, black accents and gold details. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 35,
+      "name": "Galaxy Nights",
+      "category": "trendy",
+      "shape": "Stiletto",
+      "thumbnail_url": "",
+      "prompt": "Dark galaxy stiletto-shaped gel polish with purple nebula, stars and glitter effects. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 3
+    },
+    {
+      "id": 36,
+      "name": "Aura Nails",
+      "category": "trendy",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Trendy aura almond-shaped gel polish with soft blurred color gradients in pink and lilac. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 37,
+      "name": "Cat Eye",
+      "category": "trendy",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Coffin-shaped gel polish with magnetic cat-eye gel effect in deep green and gold shimmer. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 38,
+      "name": "Marble Queen",
+      "category": "trendy",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Almond-shaped gel polish with white and grey marble veining and gold accent lines. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 39,
+      "name": "Glazed Donut",
+      "category": "trendy",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Glazed donut almond-shaped gel polish with pearlescent chrome shimmer. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 40,
+      "name": "Coquette Bow",
+      "category": "trendy",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Coquette almond-shaped gel polish with tiny red bows on a milky white glossy base. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    },
+    {
+      "id": 41,
+      "name": "Valentine Love",
+      "category": "seasonal",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Valentine almond-shaped gel polish in red and pink with hearts, lace patterns and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 1
+    },
+    {
+      "id": 42,
+      "name": "Christmas Sparkle",
+      "category": "seasonal",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Holiday coffin-shaped gel polish in red and green with gold glitter, snowflakes and festive shine. High-gloss salon finish on the nail surface only.",
+      "is_premium": false,
+      "sort_order": 2
+    },
+    {
+      "id": 43,
+      "name": "Halloween Queen",
+      "category": "seasonal",
+      "shape": "Stiletto",
+      "thumbnail_url": "",
+      "prompt": "Halloween stiletto-shaped gel polish in black and orange with spiderweb art and glossy finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 3
+    },
+    {
+      "id": 44,
+      "name": "Summer Glow",
+      "category": "seasonal",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Summer almond-shaped gel polish with golden sun-kissed ombre and glossy beach-ready finish. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 4
+    },
+    {
+      "id": 45,
+      "name": "Autumn Leaves",
+      "category": "seasonal",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Fall almond-shaped gel polish in burnt orange and brown with leaf accents and matte-gloss mix. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 5
+    },
+    {
+      "id": 46,
+      "name": "Winter Snow",
+      "category": "seasonal",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "Winter coffin-shaped gel polish in icy white and silver with snowflake glitter and crystal shine. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 6
+    },
+    {
+      "id": 47,
+      "name": "Spring Bloom",
+      "category": "seasonal",
+      "shape": "Almond",
+      "thumbnail_url": "",
+      "prompt": "Spring almond-shaped gel polish with cherry blossom florals on soft pink glossy base. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 7
+    },
+    {
+      "id": 48,
+      "name": "New Year Gold",
+      "category": "seasonal",
+      "shape": "Coffin",
+      "thumbnail_url": "",
+      "prompt": "New Year coffin-shaped gel polish in black with gold glitter fade and celebration sparkle. High-gloss salon finish on the nail surface only.",
+      "is_premium": true,
+      "sort_order": 8
+    }
+  ]
+}
