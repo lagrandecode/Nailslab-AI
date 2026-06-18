@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../constants/asset_paths.dart';
+import 'hand_trace_painter.dart';
 
-/// Reference hand trace extracted from the NailLab camera guide.
+/// Vector hand guide for the camera overlay.
 class HandTraceOverlay extends StatelessWidget {
   const HandTraceOverlay({
     super.key,
@@ -15,7 +15,7 @@ class HandTraceOverlay extends StatelessWidget {
   final double height;
   final double scale;
 
-  static const double _aspectRatio = 441 / 734;
+  static const double _aspectRatio = 0.58;
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +23,9 @@ class HandTraceOverlay extends StatelessWidget {
 
     return Transform.scale(
       scale: scale,
-      child: Transform(
-        alignment: Alignment.center,
-        transform: Matrix4.diagonal3Values(isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
-        child: Image.asset(
-          AssetPaths.handTraceLeft,
-          width: width,
-          height: height,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-        ),
+      child: CustomPaint(
+        painter: HandTracePainter(isLeftHand: isLeftHand),
+        size: Size(width, height),
       ),
     );
   }

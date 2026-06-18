@@ -148,7 +148,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                 Center(
                   child: HandTraceOverlay(
                     isLeftHand: _isLeftHand,
-                    height: MediaQuery.sizeOf(context).height * 0.50,
+                    height: MediaQuery.sizeOf(context).height * 0.54,
                     scale: _guideScale,
                   ),
                 ),
