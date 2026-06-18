@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../constants/asset_paths.dart';
 
-/// User-drawn hand guide for the camera overlay.
+/// Hand camera guide from bundled SVG asset.
 class HandTraceOverlay extends StatelessWidget {
   const HandTraceOverlay({
     super.key,
@@ -15,7 +16,7 @@ class HandTraceOverlay extends StatelessWidget {
   final double height;
   final double scale;
 
-  static const double _aspectRatio = 621 / 897;
+  static const double _aspectRatio = 1024 / 1536;
 
   @override
   Widget build(BuildContext context) {
@@ -26,12 +27,12 @@ class HandTraceOverlay extends StatelessWidget {
       child: Transform(
         alignment: Alignment.center,
         transform: Matrix4.diagonal3Values(isLeftHand ? 1.0 : -1.0, 1.0, 1.0),
-        child: Image.asset(
+        child: SvgPicture.asset(
           AssetPaths.handTrace,
           width: width,
           height: height,
           fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
         ),
       ),
     );

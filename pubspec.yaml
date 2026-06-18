@@ -42,6 +42,7 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_dotenv: ^5.2.1
   camera: ^0.11.2
+  flutter_svg: ^2.2.0
   http: ^1.4.0
   http_parser: ^4.1.2
   image: ^4.8.0
@@ -93,8 +94,7 @@ flutter:
   assets:
     - .env
     - assets/data/nail_styles.json
-    - assets/hand2.png
-    - assets/hand_trace.png
+    - assets/hand2.svg
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
     - assets/image1.png
