@@ -1,3 +1,4 @@
 abstract final class AppTypography {
-  static const String fontFamily = 'Jost';
+  /// Uses platform default until Jost is bundled under assets/fonts/.
+  static const String? fontFamily = null;
 }

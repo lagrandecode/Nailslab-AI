@@ -74,7 +74,12 @@ class _OnboardingPageOneState extends State<OnboardingPageOne>
     _videoController = controller;
 
     try {
-      await controller.initialize();
+      await controller.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Video failed to load');
+        },
+      );
       await controller.setVolume(0);
       await controller.setLooping(false);
       await controller.seekTo(_videoStartOffset);
