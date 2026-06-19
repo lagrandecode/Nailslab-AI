@@ -97,35 +97,38 @@ class _LiveNailPainter extends CustomPainter {
         continue;
       }
 
-      final towardJoint = joint - tip;
-      final towardJointLength = towardJoint.distance;
-      if (towardJointLength < 8) {
+      final segment = tip - joint;
+      final segmentLength = segment.distance;
+      if (segmentLength < 8) {
         continue;
       }
-      final alongFinger = towardJoint / towardJointLength;
 
-      // Tip of PNG sits on fingertip; nail extends back toward the knuckle.
-      final nailWidth = towardJointLength * 0.88 * scale;
-      final nailHeight = towardJointLength * 1.25 * scale;
-      final angle = math.atan2(-alongFinger.dx, alongFinger.dy);
+      final direction = segment / segmentLength;
+      // Flip nail art 180° so the design faces the correct way on the finger.
+      final angle = math.atan2(direction.dy, direction.dx) - math.pi / 2 + math.pi;
+
+      final nailWidth = segmentLength * 0.92 * scale;
+      final nailHeight = segmentLength * 1.35 * scale;
+      final anchor = tip - direction * (nailHeight * 0.28);
 
       canvas.save();
-      canvas.translate(tip.dx, tip.dy);
+      canvas.translate(anchor.dx, anchor.dy);
       canvas.rotate(angle);
 
-      final dstRect = Rect.fromLTWH(
-        -nailWidth / 2,
-        0,
-        nailWidth,
-        nailHeight,
+      final dstRect = Rect.fromCenter(
+        center: Offset.zero,
+        width: nailWidth,
+        height: nailHeight,
       );
-      final clipPath = Path()..addOval(dstRect.inflate(nailWidth * 0.05));
+      final clipPath = Path()..addOval(dstRect.inflate(nailWidth * 0.04));
       canvas.clipPath(clipPath);
 
-      final imageWidth = nailImage.width.toDouble();
-      final imageHeight = nailImage.height.toDouble();
-      // PNG free-edge is at the bottom of each crop; flip so it sits on the fingertip.
-      final srcRect = Rect.fromLTWH(0, imageHeight, imageWidth, -imageHeight);
+      final srcRect = Rect.fromLTWH(
+        0,
+        0,
+        nailImage.width.toDouble(),
+        nailImage.height.toDouble(),
+      );
 
       final paint = Paint()..filterQuality = FilterQuality.high;
       canvas.drawImageRect(nailImage, srcRect, dstRect, paint);
