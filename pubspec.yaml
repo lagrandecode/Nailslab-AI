@@ -129,8 +129,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-  # Jost font: add assets/fonts/Jost-Variable.ttf then uncomment:
-  # fonts:
-  #   - family: Jost
-  #     fonts:
-  #       - asset: assets/fonts/Jost-Variable.ttf
+  fonts:
+    - family: Jost
+      fonts:
+        - asset: assets/fonts/Jost-Variable.ttf

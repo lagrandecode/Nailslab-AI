@@ -3,10 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'constants/app_strings.dart';
-import 'constants/try_on_strings.dart';
-import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/camera/hand_camera_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'services/language_service.dart';
 import 'widgets/haptic_scope.dart';
@@ -14,14 +11,13 @@ import 'widgets/logo_placeholder.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NailLabApp());
-
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
     // Optional in dev; use --dart-define=OPENAI_API_KEY when .env is absent.
   }
   await LanguageService.instance.ensureLoaded();
+  runApp(const NailLabApp());
 }
 
 class NailLabApp extends StatefulWidget {
@@ -92,43 +88,11 @@ class _AppRootState extends State<_AppRoot> {
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Future<void> _openCamera(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const HandCameraScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
-              const LogoPlaceholder(height: 160),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  onPressed: () => _openCamera(context),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(27),
-                    ),
-                  ),
-                  child: Text(TryOnStrings.openCamera),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
+      body: LogoPlaceholder(height: 160),
     );
   }
 }
