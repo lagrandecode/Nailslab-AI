@@ -16,6 +16,9 @@ import '../../services/nail_look_repository.dart';
 import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
 import '../../widgets/live_nail_overlay.dart';
+import '../../widgets/plain_hand_look_view.dart';
+
+enum LookViewMode { plain, camera }
 
 class HandCameraScreen extends StatefulWidget {
   const HandCameraScreen({super.key});
@@ -33,15 +36,20 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   bool _looksLoaded = false;
   bool _showGuide = true;
   bool _isLeftHand = true;
+  bool _brownHand = false;
   bool _capturing = false;
   bool _processingFrame = false;
   bool _imageStreamActive = false;
+  bool _cameraInitStarted = false;
   double _guideScale = 1.0;
   String? _errorMessage;
   CameraPanelTab _activeTab = CameraPanelTab.looks;
+  LookViewMode _viewMode = LookViewMode.plain;
   NailLook? _selectedLook;
   TrackedHandFrame? _trackedHand;
   Size _previewLayoutSize = Size.zero;
+
+  bool get _isPlain => _viewMode == LookViewMode.plain;
 
   @override
   void initState() {
@@ -51,16 +59,17 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
   Future<void> _init() async {
     await _lookRepository.ensureLoaded();
-    await _handTracking.ensureInitialized();
     if (mounted) {
-      final looks = _lookRepository.all;
-      setState(() {
-        _looksLoaded = true;
-        if (_selectedLook == null && looks.isNotEmpty) {
-          _selectedLook = looks.first;
-        }
-      });
+      setState(() => _looksLoaded = true);
     }
+  }
+
+  Future<void> _ensureCameraReady() async {
+    if (_ready || _cameraInitStarted) {
+      return;
+    }
+    _cameraInitStarted = true;
+    await _handTracking.ensureInitialized();
     await _initCamera();
   }
 
@@ -95,7 +104,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
         _ready = true;
       });
 
-      if (_selectedLook != null) {
+      if (_selectedLook != null && !_isPlain) {
         await _startTrackingStream();
       }
     } on CameraException catch (e) {
@@ -105,7 +114,29 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     }
   }
 
+  Future<void> _toggleViewMode() async {
+    AppHaptics.heavy();
+    if (_isPlain) {
+      setState(() => _viewMode = LookViewMode.camera);
+      await _ensureCameraReady();
+      if (_selectedLook != null) {
+        await _startTrackingStream();
+      }
+    } else {
+      await _stopTrackingStream();
+      if (mounted) {
+        setState(() {
+          _viewMode = LookViewMode.plain;
+          _trackedHand = null;
+        });
+      }
+    }
+  }
+
   Future<void> _startTrackingStream() async {
+    if (_isPlain) {
+      return;
+    }
     final controller = _controller;
     if (controller == null ||
         !controller.value.isInitialized ||
@@ -135,9 +166,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     } finally {
       _imageStreamActive = false;
       if (mounted) {
-        setState(() {
-          _trackedHand = null;
-        });
+        setState(() => _trackedHand = null);
       }
     }
   }
@@ -231,34 +260,40 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
     if (tab != CameraPanelTab.looks) {
       _stopTrackingStream();
-    } else if (_selectedLook != null) {
+    } else if (_selectedLook != null && !_isPlain) {
       _startTrackingStream();
     }
   }
 
   void _onLookSelected(NailLook look) {
+    AppHaptics.heavy();
     setState(() {
       _activeTab = CameraPanelTab.looks;
       _selectedLook = look;
       _trackedHand = null;
     });
     NailLookImageCache.instance.loadFingerNails(look);
-    _startTrackingStream();
+    if (!_isPlain) {
+      _startTrackingStream();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final overlayStyle = _isPlain
+        ? SystemUiOverlayStyle.dark
+        : SystemUiOverlayStyle.light;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: overlayStyle,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: _isPlain ? Colors.white : Colors.black,
         body: _errorMessage != null ? _ErrorView(message: _errorMessage!) : _buildBody(),
       ),
     );
   }
 
   Widget _buildBody() {
-    final controller = _controller;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
@@ -272,6 +307,68 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
             builder: (context, constraints) {
               _previewLayoutSize = Size(constraints.maxWidth, constraints.maxHeight);
 
+              if (_isPlain) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PlainHandLookView(
+                      look: trackingActive ? _selectedLook : null,
+                      brownHand: _brownHand,
+                      scale: _guideScale,
+                    ),
+                    SafeArea(
+                      bottom: false,
+                      child: Column(
+                        children: [
+                          _TopBar(
+                            plainMode: true,
+                            showGuide: _showGuide,
+                            isPlainView: true,
+                            onClose: () => Navigator.of(context).pop(),
+                            onToggleViewMode: _toggleViewMode,
+                            onToggleGuide: () => setState(() => _showGuide = !_showGuide),
+                          ),
+                          const SizedBox(height: 12),
+                          _HintBanner(
+                            plainMode: true,
+                            trackingActive: trackingActive,
+                            handDetected: handDetected,
+                            lookSelected: _selectedLook != null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_showGuide)
+                      Positioned(
+                        left: 48,
+                        right: 48,
+                        bottom: 16,
+                        child: _GuideScaleSlider(
+                          plainMode: true,
+                          value: _guideScale,
+                          onChanged: (value) => setState(() => _guideScale = value),
+                        ),
+                      ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 12,
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          _SkinToneToggle(
+                            brownHand: _brownHand,
+                            onTap: () => setState(() => _brownHand = !_brownHand),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              final controller = _controller;
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -293,14 +390,19 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                     child: Column(
                       children: [
                         _TopBar(
+                          plainMode: false,
                           showGuide: _showGuide,
+                          isPlainView: false,
                           onClose: () => Navigator.of(context).pop(),
+                          onToggleViewMode: _toggleViewMode,
                           onToggleGuide: () => setState(() => _showGuide = !_showGuide),
                         ),
                         const SizedBox(height: 12),
                         _HintBanner(
+                          plainMode: false,
                           trackingActive: trackingActive,
                           handDetected: handDetected,
+                          lookSelected: _selectedLook != null,
                         ),
                       ],
                     ),
@@ -325,6 +427,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                       right: 48,
                       bottom: 16,
                       child: _GuideScaleSlider(
+                        plainMode: false,
                         value: _guideScale,
                         onChanged: (value) => setState(() => _guideScale = value),
                       ),
@@ -380,14 +483,25 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
 class _TopBar extends StatelessWidget {
   const _TopBar({
+    required this.plainMode,
     required this.showGuide,
+    required this.isPlainView,
     required this.onClose,
+    required this.onToggleViewMode,
     required this.onToggleGuide,
   });
 
+  final bool plainMode;
   final bool showGuide;
+  final bool isPlainView;
   final VoidCallback onClose;
+  final VoidCallback onToggleViewMode;
   final VoidCallback onToggleGuide;
+
+  Color get _iconColor =>
+      plainMode ? AppColors.title.withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85);
+
+  Color get _activeColor => plainMode ? AppColors.primary : AppColors.primaryLight;
 
   @override
   Widget build(BuildContext context) {
@@ -397,49 +511,52 @@ class _TopBar extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onClose,
-            icon: const Icon(Icons.close, color: Colors.white, size: 28),
-          ),
-          const Spacer(),
-          Column(
-            children: [
-              Icon(Icons.timer_outlined, color: Colors.white.withValues(alpha: 0.85), size: 24),
-              const SizedBox(height: 2),
-              ListenableBuilder(
-                listenable: LanguageService.instance,
-                builder: (context, _) => Text(
-                  TryOnStrings.timerOff,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
+            icon: Icon(Icons.close, color: _iconColor, size: 28),
           ),
           const Spacer(),
           GestureDetector(
-            onTap: onToggleGuide,
+            onTap: onToggleViewMode,
             child: Column(
               children: [
-                Icon(
-                  Icons.back_hand_outlined,
-                  color: showGuide ? AppColors.primaryLight : Colors.white.withValues(alpha: 0.85),
-                  size: 24,
-                ),
+                Icon(Icons.panorama_outlined, color: _iconColor, size: 24),
                 const SizedBox(height: 2),
                 ListenableBuilder(
                   listenable: LanguageService.instance,
                   builder: (context, _) => Text(
-                    showGuide ? TryOnStrings.guideOn : TryOnStrings.guideOff,
-                    style: TextStyle(
-                      color: showGuide ? AppColors.primaryLight : Colors.white.withValues(alpha: 0.85),
-                      fontSize: 11,
-                    ),
+                    isPlainView ? TryOnStrings.tapToCamera : TryOnStrings.tapToPlain,
+                    style: TextStyle(color: _iconColor, fontSize: 11),
                   ),
                 ),
               ],
             ),
           ),
+          const Spacer(),
+          if (!plainMode)
+            GestureDetector(
+              onTap: onToggleGuide,
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.back_hand_outlined,
+                    color: showGuide ? _activeColor : _iconColor,
+                    size: 24,
+                  ),
+                  const SizedBox(height: 2),
+                  ListenableBuilder(
+                    listenable: LanguageService.instance,
+                    builder: (context, _) => Text(
+                      showGuide ? TryOnStrings.guideOn : TryOnStrings.guideOff,
+                      style: TextStyle(
+                        color: showGuide ? _activeColor : _iconColor,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            const SizedBox(width: 48),
         ],
       ),
     );
@@ -448,17 +565,23 @@ class _TopBar extends StatelessWidget {
 
 class _HintBanner extends StatelessWidget {
   const _HintBanner({
+    required this.plainMode,
     required this.trackingActive,
     required this.handDetected,
+    required this.lookSelected,
   });
 
+  final bool plainMode;
   final bool trackingActive;
   final bool handDetected;
+  final bool lookSelected;
 
   @override
   Widget build(BuildContext context) {
     final String text;
-    if (trackingActive && handDetected) {
+    if (plainMode) {
+      text = lookSelected ? TryOnStrings.plainLookAppliedHint : TryOnStrings.plainPickLookHint;
+    } else if (trackingActive && handDetected) {
       text = TryOnStrings.holdHandHint;
     } else if (trackingActive) {
       text = TryOnStrings.detectingHandHint;
@@ -466,11 +589,18 @@ class _HintBanner extends StatelessWidget {
       text = TryOnStrings.whiteBackgroundHint;
     }
 
+    final bannerColor = plainMode
+        ? AppColors.title.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.45);
+    final textColor = plainMode
+        ? AppColors.title.withValues(alpha: 0.72)
+        : (handDetected ? Colors.greenAccent.shade100 : AppColors.primaryLight);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: bannerColor,
         borderRadius: BorderRadius.circular(4),
       ),
       child: ListenableBuilder(
@@ -479,7 +609,7 @@ class _HintBanner extends StatelessWidget {
           text,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: handDetected ? Colors.greenAccent.shade100 : AppColors.primaryLight,
+            color: textColor,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -491,10 +621,12 @@ class _HintBanner extends StatelessWidget {
 
 class _GuideScaleSlider extends StatelessWidget {
   const _GuideScaleSlider({
+    required this.plainMode,
     required this.value,
     required this.onChanged,
   });
 
+  final bool plainMode;
   final double value;
   final ValueChanged<double> onChanged;
 
@@ -503,8 +635,12 @@ class _GuideScaleSlider extends StatelessWidget {
     return SliderTheme(
       data: SliderThemeData(
         trackHeight: 2,
-        activeTrackColor: Colors.white.withValues(alpha: 0.35),
-        inactiveTrackColor: Colors.white.withValues(alpha: 0.35),
+        activeTrackColor: plainMode
+            ? AppColors.title.withValues(alpha: 0.2)
+            : Colors.white.withValues(alpha: 0.35),
+        inactiveTrackColor: plainMode
+            ? AppColors.title.withValues(alpha: 0.2)
+            : Colors.white.withValues(alpha: 0.35),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
         overlayShape: SliderComponentShape.noOverlay,
         thumbColor: AppColors.primary,
@@ -583,6 +719,50 @@ class _HandToggle extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkinToneToggle extends StatelessWidget {
+  const _SkinToneToggle({
+    required this.brownHand,
+    required this.onTap,
+  });
+
+  final bool brownHand;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: brownHand ? const Color(0xFF6B4423) : const Color(0xFFF1D3C7),
+              border: Border.all(color: AppColors.primary, width: 2),
+            ),
+          ),
+          const SizedBox(height: 4),
+          ListenableBuilder(
+            listenable: LanguageService.instance,
+            builder: (context, _) => Text(
+              brownHand ? TryOnStrings.brownHand : TryOnStrings.lightHand,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.title.withValues(alpha: 0.75),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),

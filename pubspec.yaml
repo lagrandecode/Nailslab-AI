@@ -101,6 +101,8 @@ flutter:
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
     - assets/image1.png
+    - assets/hand3.png
+    - assets/handbrown.png
     - assets/nails/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -1,9 +1,8 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:hand_detection/hand_detection.dart';
 
+import '../core/camera/nail_bed_geometry.dart';
 import '../models/nail_finger.dart';
 import '../models/nail_look.dart';
 import '../services/nail_look_image_cache.dart';
@@ -83,45 +82,35 @@ class _LiveNailPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Offset? point(HandLandmarkType type) => hand.landmarks[type];
-
     for (final placement in NailFingerPlacement.all) {
       if (!isFingerActiveForPaint(hand, placement)) {
         continue;
       }
 
       final nailImage = fingerNails[placement.finger];
-      final tip = point(placement.tip);
-      final joint = point(placement.joint);
-      if (nailImage == null || tip == null || joint == null) {
+      if (nailImage == null) {
         continue;
       }
 
-      final segment = tip - joint;
-      final segmentLength = segment.distance;
-      if (segmentLength < 8) {
+      final geometry = computeNailBedGeometry(
+        hand: hand,
+        placement: placement,
+        scale: scale,
+      );
+      if (geometry == null) {
         continue;
       }
-
-      final direction = segment / segmentLength;
-      // Flip nail art 180° so the design faces the correct way on the finger.
-      final angle = math.atan2(direction.dy, direction.dx) - math.pi / 2 + math.pi;
-
-      final nailWidth = segmentLength * 0.92 * scale;
-      final nailHeight = segmentLength * 1.35 * scale;
-      final anchor = tip - direction * (nailHeight * 0.28);
 
       canvas.save();
-      canvas.translate(anchor.dx, anchor.dy);
-      canvas.rotate(angle);
+      canvas.translate(geometry.center.dx, geometry.center.dy);
+      canvas.rotate(geometry.angle);
 
       final dstRect = Rect.fromCenter(
         center: Offset.zero,
-        width: nailWidth,
-        height: nailHeight,
+        width: geometry.width,
+        height: geometry.height,
       );
-      final clipPath = Path()..addOval(dstRect.inflate(nailWidth * 0.04));
-      canvas.clipPath(clipPath);
+      canvas.clipPath(buildNailClipPath(geometry.width, geometry.height));
 
       final srcRect = Rect.fromLTWH(
         0,
@@ -130,7 +119,9 @@ class _LiveNailPainter extends CustomPainter {
         nailImage.height.toDouble(),
       );
 
-      final paint = Paint()..filterQuality = FilterQuality.high;
+      final paint = Paint()
+        ..filterQuality = FilterQuality.high
+        ..isAntiAlias = true;
       canvas.drawImageRect(nailImage, srcRect, dstRect, paint);
       canvas.restore();
     }

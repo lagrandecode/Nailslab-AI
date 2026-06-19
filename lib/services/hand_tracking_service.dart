@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:hand_detection/hand_detection.dart';
 
 import '../models/nail_finger.dart';
+import 'hand_landmark_smoother.dart';
 
 /// Maps detector coordinates to on-screen preview coordinates (BoxFit.cover).
 class CameraPreviewMapper {
@@ -39,6 +40,7 @@ class CameraPreviewMapper {
 class HandTrackingService {
   HandDetector? _detector;
   bool _detecting = false;
+  final _smoother = HandLandmarkSmoother();
 
   Future<void> ensureInitialized() async {
     _detector ??= await HandDetector.create(
@@ -113,7 +115,7 @@ class HandTrackingService {
         return null;
       }
 
-      return frame;
+      return _smoother.smooth(frame);
     } catch (error, stack) {
       if (kDebugMode) {
         debugPrint('Hand tracking error: $error');
@@ -126,6 +128,7 @@ class HandTrackingService {
   }
 
   Future<void> dispose() async {
+    _smoother.reset();
     await _detector?.dispose();
     _detector = null;
   }

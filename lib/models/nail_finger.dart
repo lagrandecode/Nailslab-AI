@@ -128,7 +128,15 @@ bool isFingerActiveForPaint(
   final tipToMcp = (tip - mcp).distance;
   final extensionRatio = tipToMcp / pipToMcp;
 
-  return extensionRatio >= placement.minExtensionRatio;
+  final visibleTips = NailFingerPlacement.all
+      .where(
+        (p) =>
+            hand.landmarks[p.tip] != null && (hand.visibility[p.tip] ?? 0) >= 0.45,
+      )
+      .length;
+  final minRatio = visibleTips >= 4 ? 1.06 : placement.minExtensionRatio;
+
+  return extensionRatio >= minRatio;
 }
 
 int countActiveFingers(TrackedHandFrame hand) {

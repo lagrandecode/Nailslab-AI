@@ -220,6 +220,90 @@ abstract final class TryOnStrings {
     },
   );
 
+  static String get tapToPlain => _t('Tap to plain', {
+    'zh': '点击切换 plain',
+    'hi': 'plain के लिए टैप करें',
+    'es': 'Toca para plain',
+    'fr': 'Appuyez pour plain',
+    'de': 'Tippen für plain',
+    'ru': 'Нажмите для plain',
+    'pt': 'Toque para plain',
+    'it': 'Tocca per plain',
+    'ro': 'Atinge pentru plain',
+    'nl': 'Tik voor plain',
+    'ar': 'اضغط للوضع العادي',
+  });
+
+  static String get tapToCamera => _t('Tap to camera', {
+    'zh': '点击切换相机',
+    'hi': 'कैमरे के लिए टैप करें',
+    'es': 'Toca para cámara',
+    'fr': 'Appuyez pour la caméra',
+    'de': 'Tippen für Kamera',
+    'ru': 'Нажмите для камеры',
+    'pt': 'Toque para câmara',
+    'it': 'Tocca per fotocamera',
+    'ro': 'Atinge pentru cameră',
+    'nl': 'Tik voor camera',
+    'ar': 'اضغط للكاميرا',
+  });
+
+  static String get plainPickLookHint => _t('Tap a look to paint the nails', {
+    'zh': '点击造型以涂上美甲',
+    'hi': 'नेल पेंट करने के लिए लुक टैप करें',
+    'es': 'Toca un look para pintar las uñas',
+    'fr': 'Appuyez sur un look pour peindre les ongles',
+    'de': 'Tippe einen Look an, um Nägel zu lackieren',
+    'ru': 'Нажмите стиль, чтобы нанести маникюр',
+    'pt': 'Toque num look para pintar as unhas',
+    'it': 'Tocca un look per dipingere le unghie',
+    'ro': 'Atinge un look pentru a picta unghiile',
+    'nl': 'Tik een look om nagels te schilderen',
+    'ar': 'اضغط على مظهر لطلاء الأظافر',
+  });
+
+  static String get plainLookAppliedHint => _t('Look applied — tap another style', {
+    'zh': '已应用造型 — 点击其他风格',
+    'hi': 'लुक लगाया गया — दूसरा स्टाइल टैप करें',
+    'es': 'Look aplicado — toca otro estilo',
+    'fr': 'Look appliqué — choisissez un autre style',
+    'de': 'Look angewendet — wähle einen anderen Stil',
+    'ru': 'Стиль применён — выберите другой',
+    'pt': 'Look aplicado — toque noutro estilo',
+    'it': 'Look applicato — tocca un altro stile',
+    'ro': 'Look aplicat — atinge alt stil',
+    'nl': 'Look toegepast — tik een andere stijl',
+    'ar': 'تم تطبيق المظهر — اختر نمطًا آخر',
+  });
+
+  static String get lightHand => _t('Light hand', {
+    'zh': '浅色手',
+    'hi': 'हल्का हाथ',
+    'es': 'Mano clara',
+    'fr': 'Main claire',
+    'de': 'Helle Hand',
+    'ru': 'Светлая рука',
+    'pt': 'Mão clara',
+    'it': 'Mano chiara',
+    'ro': 'Mână deschisă',
+    'nl': 'Lichte hand',
+    'ar': 'يد فاتحة',
+  });
+
+  static String get brownHand => _t('Brown hand', {
+    'zh': '棕色手',
+    'hi': 'भूरा हाथ',
+    'es': 'Mano morena',
+    'fr': 'Main brune',
+    'de': 'Braune Hand',
+    'ru': 'Тёмная рука',
+    'pt': 'Mão castanha',
+    'it': 'Mano scura',
+    'ro': 'Mână maro',
+    'nl': 'Donkere hand',
+    'ar': 'يد داكنة',
+  });
+
   static String get leftHand => _t('Left hand', {
     'zh': '左手',
     'hi': 'बायां हाथ',
