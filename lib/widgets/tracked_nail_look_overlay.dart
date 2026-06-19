@@ -12,12 +12,10 @@ class TrackedNailLookOverlay extends StatefulWidget {
     super.key,
     required this.look,
     required this.transform,
-    this.scale = 1.0,
   });
 
   final NailLook look;
   final Matrix4 transform;
-  final double scale;
 
   @override
   State<TrackedNailLookOverlay> createState() => _TrackedNailLookOverlayState();
@@ -54,18 +52,14 @@ class _TrackedNailLookOverlayState extends State<TrackedNailLookOverlay> {
       return const SizedBox.shrink();
     }
 
-    final height = MediaQuery.sizeOf(context).height * HandGuideLayout.heightScreenFactor;
-    final width = height * HandGuideLayout.aspectRatio;
-    final overlaySize = Size(width * widget.scale, height * widget.scale);
-
-    final matrix = Matrix4.copy(widget.transform)
-      ..scaleByDouble(widget.scale, widget.scale, 1, 1);
+    final layoutHeight = MediaQuery.sizeOf(context).height * HandGuideLayout.heightScreenFactor;
+    final layoutWidth = layoutHeight * HandGuideLayout.aspectRatio;
 
     return Transform(
-      transform: matrix,
+      transform: widget.transform,
       child: SizedBox(
-        width: overlaySize.width,
-        height: overlaySize.height,
+        width: layoutWidth,
+        height: layoutHeight,
         child: RawImage(
           image: image,
           fit: BoxFit.contain,

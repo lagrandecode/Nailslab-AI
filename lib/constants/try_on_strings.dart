@@ -187,19 +187,19 @@ abstract final class TryOnStrings {
   );
 
   static String get holdHandHint => _t(
-    'Hold your hand in view — nails follow your fingers',
+    'Nails painted on your fingers — move your hand',
     {
-      'zh': '将手保持在画面中 — 美甲会跟随手指',
-      'hi': 'अपना हाथ फ्रेम में रखें — नेल आपकी उंगलियों पर दिखेंगे',
-      'es': 'Mantén la mano a la vista — las uñas siguen tus dedos',
-      'fr': 'Gardez la main visible — les ongles suivent vos doigts',
-      'de': 'Halte deine Hand im Bild — Nägel folgen deinen Fingern',
-      'ru': 'Держите руку в кадре — маникюр следует за пальцами',
-      'pt': 'Mantenha a mão visível — as unhas seguem os dedos',
-      'it': 'Tieni la mano in vista — le unghie seguono le dita',
-      'ro': 'Ține mâna în cadru — unghiile urmează degetele',
-      'nl': 'Houd je hand in beeld — nagels volgen je vingers',
-      'ar': 'أبقِ يدك في الإطار — الأظافر تتبع أصابعك',
+      'zh': '美甲已涂在您的手指上 — 移动您的手',
+      'hi': 'उंगलियों पर नेल लगे हैं — हाथ हिलाएँ',
+      'es': 'Uñas pintadas en tus dedos — mueve la mano',
+      'fr': 'Ongles peints sur vos doigts — bougez la main',
+      'de': 'Nägel auf deinen Fingern — bewege deine Hand',
+      'ru': 'Маникюр на пальцах — двигайте рукой',
+      'pt': 'Unhas pintadas nos dedos — mova a mão',
+      'it': 'Unghie dipinte sulle dita — muovi la mano',
+      'ro': 'Unghii pictate pe degete — mișcă mâna',
+      'nl': 'Nagels op je vingers — beweeg je hand',
+      'ar': 'الأظافر مرسومة على أصابعك — حرّك يدك',
     },
   );
 

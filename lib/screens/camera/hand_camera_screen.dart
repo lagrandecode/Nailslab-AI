@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,13 +7,15 @@ import '../../constants/try_on_strings.dart';
 import '../../core/camera/hand_guide_layout.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/nail_finger.dart';
 import '../../models/nail_look.dart';
 import '../../services/hand_tracking_service.dart';
 import '../../services/language_service.dart';
+import '../../services/nail_look_image_cache.dart';
 import '../../services/nail_look_repository.dart';
 import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
-import '../../widgets/tracked_nail_look_overlay.dart';
+import '../../widgets/live_nail_overlay.dart';
 
 class HandCameraScreen extends StatefulWidget {
   const HandCameraScreen({super.key});
@@ -41,7 +41,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   CameraPanelTab _activeTab = CameraPanelTab.looks;
   NailLook? _selectedLook;
   TrackedHandFrame? _trackedHand;
-  Matrix4? _overlayTransform;
   Size _previewLayoutSize = Size.zero;
 
   @override
@@ -54,7 +53,13 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     await _lookRepository.ensureLoaded();
     await _handTracking.ensureInitialized();
     if (mounted) {
-      setState(() => _looksLoaded = true);
+      final looks = _lookRepository.all;
+      setState(() {
+        _looksLoaded = true;
+        if (_selectedLook == null && looks.isNotEmpty) {
+          _selectedLook = looks.first;
+        }
+      });
     }
     await _initCamera();
   }
@@ -76,9 +81,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
         camera,
         ResolutionPreset.high,
         enableAudio: false,
-        imageFormatGroup: Platform.isAndroid
-            ? ImageFormatGroup.yuv420
-            : ImageFormatGroup.bgra8888,
+        imageFormatGroup: ImageFormatGroup.yuv420,
       );
 
       await controller.initialize();
@@ -134,7 +137,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       if (mounted) {
         setState(() {
           _trackedHand = null;
-          _overlayTransform = null;
         });
       }
     }
@@ -163,28 +165,14 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       }
 
       if (frame == null) {
-        if (_trackedHand != null || _overlayTransform != null) {
-          setState(() {
-            _trackedHand = null;
-            _overlayTransform = null;
-          });
+        if (_trackedHand != null) {
+          setState(() => _trackedHand = null);
         }
         return;
       }
 
-      final screenHeight = _previewLayoutSize.height;
-      final overlayHeight = screenHeight * HandGuideLayout.heightScreenFactor;
-      final overlayWidth = overlayHeight * HandGuideLayout.aspectRatio;
-      final overlaySize = Size(overlayWidth * _guideScale, overlayHeight * _guideScale);
-
-      final transform = computeNailOverlayTransform(
-        hand: frame,
-        overlaySize: overlaySize,
-      );
-
       setState(() {
         _trackedHand = frame;
-        _overlayTransform = transform;
         if (frame.handedness != null) {
           _isLeftHand = frame.handedness == Handedness.left;
         }
@@ -253,8 +241,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       _activeTab = CameraPanelTab.looks;
       _selectedLook = look;
       _trackedHand = null;
-      _overlayTransform = null;
     });
+    NailLookImageCache.instance.loadFingerNails(look);
     _startTrackingStream();
   }
 
@@ -275,7 +263,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
     final trackingActive = _selectedLook != null && _activeTab == CameraPanelTab.looks;
-    final handDetected = _trackedHand != null && _overlayTransform != null;
+    final handDetected = _trackedHand != null;
 
     return Column(
       children: [
@@ -318,9 +306,9 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                     ),
                   ),
                   if (trackingActive && handDetected)
-                    TrackedNailLookOverlay(
+                    LiveNailOverlay(
                       look: _selectedLook!,
-                      transform: _overlayTransform!,
+                      hand: _trackedHand!,
                       scale: _guideScale,
                     ),
                   if (_showGuide && !handDetected)

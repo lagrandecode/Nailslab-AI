@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hand_detection/hand_detection.dart';
+
+import '../models/nail_finger.dart';
 
 /// Maps detector coordinates to on-screen preview coordinates (BoxFit.cover).
 class CameraPreviewMapper {
@@ -34,18 +36,6 @@ class CameraPreviewMapper {
   }
 }
 
-class TrackedHandFrame {
-  const TrackedHandFrame({
-    required this.landmarks,
-    required this.confidence,
-    this.handedness,
-  });
-
-  final Map<HandLandmarkType, Offset> landmarks;
-  final Handedness? handedness;
-  final double confidence;
-}
-
 class HandTrackingService {
   HandDetector? _detector;
   bool _detecting = false;
@@ -53,7 +43,7 @@ class HandTrackingService {
   Future<void> ensureInitialized() async {
     _detector ??= await HandDetector.create(
       mode: HandMode.boxesAndLandmarks,
-      detectorConf: 0.5,
+      detectorConf: 0.35,
       maxDetections: 1,
     );
   }
@@ -82,13 +72,6 @@ class HandTrackingService {
       );
 
       const maxDim = 640;
-      final sourceSize = detectionSize(
-        width: image.width,
-        height: image.height,
-        rotation: rotation,
-        maxDim: maxDim,
-      );
-
       final hands = await detector.detectFromCameraImage(
         image,
         rotation: rotation,
@@ -100,6 +83,7 @@ class HandTrackingService {
       }
 
       final hand = hands.first;
+      final sourceSize = Size(hand.imageWidth.toDouble(), hand.imageHeight.toDouble());
       final mirrorHorizontally = isFrontCamera && Platform.isAndroid;
 
       final mapper = CameraPreviewMapper(
@@ -109,23 +93,32 @@ class HandTrackingService {
       );
 
       final mapped = <HandLandmarkType, Offset>{};
+      final visibility = <HandLandmarkType, double>{};
       for (final landmark in hand.landmarks) {
-        if (landmark.visibility < 0.4) {
+        if (landmark.visibility < 0.2) {
           continue;
         }
         mapped[landmark.type] = mapper.mapPoint(landmark.x, landmark.y);
+        visibility[landmark.type] = landmark.visibility;
       }
 
-      if (mapped.length < 8) {
-        return null;
-      }
-
-      return TrackedHandFrame(
+      final frame = TrackedHandFrame(
         landmarks: mapped,
+        visibility: visibility,
         handedness: hand.handedness,
         confidence: hand.score,
       );
-    } catch (_) {
+
+      if (countActiveFingers(frame) < 1) {
+        return null;
+      }
+
+      return frame;
+    } catch (error, stack) {
+      if (kDebugMode) {
+        debugPrint('Hand tracking error: $error');
+        debugPrint('$stack');
+      }
       return null;
     } finally {
       _detecting = false;
@@ -136,40 +129,4 @@ class HandTrackingService {
     await _detector?.dispose();
     _detector = null;
   }
-}
-
-/// Computes transform to align a nail overlay image with detected hand landmarks.
-Matrix4 computeNailOverlayTransform({
-  required TrackedHandFrame hand,
-  required Size overlaySize,
-}) {
-  Offset? point(HandLandmarkType type) => hand.landmarks[type];
-
-  final wrist = point(HandLandmarkType.wrist);
-  final indexMcp = point(HandLandmarkType.indexFingerMCP);
-  final middleTip = point(HandLandmarkType.middleFingerTip);
-  final pinkyMcp = point(HandLandmarkType.pinkyMCP);
-
-  if (wrist == null || indexMcp == null || middleTip == null || pinkyMcp == null) {
-    return Matrix4.identity();
-  }
-
-  final palmCenter = Offset(
-    (indexMcp.dx + pinkyMcp.dx) / 2,
-    (indexMcp.dy + pinkyMcp.dy) / 2,
-  );
-  final handSpan = (indexMcp - pinkyMcp).distance.clamp(40.0, 600.0);
-  const referenceSpan = 220.0;
-  final scale = handSpan / referenceSpan;
-
-  final upVector = middleTip - wrist;
-  final angle = math.atan2(upVector.dy, upVector.dx) - (math.pi / 2);
-
-  final flip = hand.handedness == Handedness.left ? 1.0 : -1.0;
-
-  return Matrix4.identity()
-    ..translateByDouble(palmCenter.dx, palmCenter.dy, 0, 1)
-    ..rotateZ(angle)
-    ..scaleByDouble(scale * flip, scale, 1, 1)
-    ..translateByDouble(-overlaySize.width * 0.5, -overlaySize.height * 0.72, 0, 1);
 }

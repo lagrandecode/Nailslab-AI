@@ -5,9 +5,16 @@
       "name": "Geometric",
       "overlay": "assets/looks/geometric.png",
       "thumbnail": "assets/looks/geometric.png",
-      "crop_bottom": 0.22,
-      "offset_y": -0.04,
-      "sort_order": 1
+      "crop_bottom": 0,
+      "offset_y": 0,
+      "sort_order": 1,
+      "nail_crops": {
+        "pinky": { "x": 0.093, "y": 0.389, "w": 0.206, "h": 0.154 },
+        "ring": { "x": 0.250, "y": 0.332, "w": 0.164, "h": 0.165 },
+        "middle": { "x": 0.426, "y": 0.307, "w": 0.150, "h": 0.168 },
+        "index": { "x": 0.588, "y": 0.333, "w": 0.162, "h": 0.163 },
+        "thumb": { "x": 0.703, "y": 0.389, "w": 0.194, "h": 0.154 }
+      }
     }
   ]
 }
