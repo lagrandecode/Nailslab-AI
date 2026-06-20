@@ -2,13 +2,13 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../core/camera/nail_bed_geometry.dart';
 import '../core/camera/plain_hand_layout.dart';
+import '../core/camera/nail_bed_geometry.dart';
 import '../models/nail_finger.dart';
 import '../models/nail_look.dart';
 import '../services/nail_look_image_cache.dart';
 
-/// Static hand photo with nail looks painted on fixed finger slots.
+/// Static hand photo for plain mode — baked look hand or base hand + patches.
 class PlainHandLookView extends StatefulWidget {
   const PlainHandLookView({
     super.key,
@@ -37,15 +37,26 @@ class _PlainHandLookViewState extends State<PlainHandLookView> {
   @override
   void didUpdateWidget(PlainHandLookView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.look?.overlayAsset != widget.look?.overlayAsset) {
+    if (oldWidget.look?.overlayAsset != widget.look?.overlayAsset ||
+        oldWidget.brownHand != widget.brownHand) {
       _loadNails();
     }
   }
 
-  Future<void> _loadNails() async {
+  bool get _usePatchOverlay {
     final look = widget.look;
     if (look == null) {
-      setState(() => _fingerNails = null);
+      return false;
+    }
+    return look.plainHandAsset(brownHand: widget.brownHand) == null;
+  }
+
+  Future<void> _loadNails() async {
+    final look = widget.look;
+    if (look == null || !_usePatchOverlay) {
+      if (mounted) {
+        setState(() => _fingerNails = null);
+      }
       return;
     }
     final nails = await NailLookImageCache.instance.loadFingerNails(look);
@@ -54,11 +65,17 @@ class _PlainHandLookViewState extends State<PlainHandLookView> {
     }
   }
 
+  String _handAsset() {
+    final look = widget.look;
+    final baked = look?.plainHandAsset(brownHand: widget.brownHand);
+    if (baked != null) {
+      return baked;
+    }
+    return widget.brownHand ? PlainHandLayout.brownAsset : PlainHandLayout.lightAsset;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final handAsset =
-        widget.brownHand ? PlainHandLayout.brownAsset : PlainHandLayout.lightAsset;
-
     return ColoredBox(
       color: Colors.white,
       child: LayoutBuilder(
@@ -83,11 +100,11 @@ class _PlainHandLookViewState extends State<PlainHandLookView> {
                       fit: StackFit.expand,
                       children: [
                         Image.asset(
-                          handAsset,
+                          _handAsset(),
                           fit: BoxFit.fill,
                           filterQuality: FilterQuality.high,
                         ),
-                        if (widget.look != null && _fingerNails != null)
+                        if (_usePatchOverlay && _fingerNails != null)
                           ...PlainHandLayout.slots.map(
                             (slot) => _PlainNailLayer(
                               slot: slot,

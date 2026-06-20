@@ -42,6 +42,41 @@ class NailFingerCrop {
   }
 }
 
+/// Per-finger sizing for live camera, measured from the baked plain-hand look.
+class CameraNailMetrics {
+  const CameraNailMetrics({
+    required this.widthOverBed,
+    this.heightOverBed = 1.0,
+    this.centerAlongBed = 0.58,
+  });
+
+  /// Nail width ÷ reference nail-bed length on the baked hand photo.
+  final double widthOverBed;
+  /// Nail height ÷ reference nail-bed length on the baked hand photo.
+  final double heightOverBed;
+  /// Position along the tip–joint axis (0 = joint, 1 = tip).
+  final double centerAlongBed;
+
+  factory CameraNailMetrics.fromJson(Map<String, dynamic> json) {
+    if (json.containsKey('width_over_bed')) {
+      return CameraNailMetrics(
+        widthOverBed: (json['width_over_bed'] as num).toDouble(),
+        heightOverBed: (json['height_over_bed'] as num?)?.toDouble() ?? 1.0,
+        centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.58,
+      );
+    }
+
+    // Legacy catalog entries sized by finger width — convert approximately.
+    final widthOverFinger = (json['width_over_finger'] as num?)?.toDouble() ?? 0.5;
+    final heightOverWidth = (json['height_over_width'] as num?)?.toDouble() ?? 1.1;
+    return CameraNailMetrics(
+      widthOverBed: widthOverFinger * 0.55,
+      heightOverBed: heightOverWidth * 0.45,
+      centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.58,
+    );
+  }
+}
+
 class NailFingerPlacement {
   const NailFingerPlacement({
     required this.finger,

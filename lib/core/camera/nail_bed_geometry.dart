@@ -22,6 +22,7 @@ NailBedGeometry? computeNailBedGeometry({
   required TrackedHandFrame hand,
   required NailFingerPlacement placement,
   required double scale,
+  CameraNailMetrics? metrics,
 }) {
   final tip = hand.landmarks[placement.tip];
   final joint = hand.landmarks[placement.joint];
@@ -40,22 +41,32 @@ NailBedGeometry? computeNailBedGeometry({
   final direction = axis / nailBedLength;
   final fingerWidth = (pip - mcp).distance;
 
-  final widthFactor = switch (placement.finger) {
-    NailFinger.thumb => 0.58,
-    NailFinger.pinky => 0.46,
-    NailFinger.middle => 0.50,
-    _ => 0.48,
-  };
-  final heightFactor = switch (placement.finger) {
-    NailFinger.thumb => 1.05,
-    _ => 1.12,
-  };
+  final double width;
+  final double height;
+  final double centerAlongBed;
 
-  final width = (fingerWidth * widthFactor * scale).clamp(14.0, 120.0);
-  final height = (nailBedLength * heightFactor * scale).clamp(16.0, 140.0);
+  if (metrics != null) {
+    width = (nailBedLength * metrics.widthOverBed * scale).clamp(10.0, 100.0);
+    height = (nailBedLength * metrics.heightOverBed * scale).clamp(12.0, 120.0);
+    centerAlongBed = metrics.centerAlongBed;
+  } else {
+    final widthFactor = switch (placement.finger) {
+      NailFinger.thumb => 0.58,
+      NailFinger.pinky => 0.46,
+      NailFinger.middle => 0.50,
+      _ => 0.48,
+    };
+    final heightFactor = switch (placement.finger) {
+      NailFinger.thumb => 1.05,
+      _ => 1.12,
+    };
 
-  // Center on the visible nail bed between cuticle (DIP) and free edge (tip).
-  final center = joint + direction * (nailBedLength * 0.56);
+    width = (fingerWidth * widthFactor * scale).clamp(14.0, 120.0);
+    height = (nailBedLength * heightFactor * scale).clamp(16.0, 140.0);
+    centerAlongBed = 0.56;
+  }
+
+  final center = joint + direction * (nailBedLength * centerAlongBed);
 
   // Align nail art so the cuticle edge sits toward the joint and tip points outward.
   final angle = math.atan2(direction.dy, direction.dx) + math.pi / 2;

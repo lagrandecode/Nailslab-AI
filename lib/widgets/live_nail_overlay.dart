@@ -13,11 +13,13 @@ class LiveNailOverlay extends StatefulWidget {
     super.key,
     required this.look,
     required this.hand,
+    this.brownHand = false,
     this.scale = 1.0,
   });
 
   final NailLook look;
   final TrackedHandFrame hand;
+  final bool brownHand;
   final double scale;
 
   @override
@@ -36,13 +38,17 @@ class _LiveNailOverlayState extends State<LiveNailOverlay> {
   @override
   void didUpdateWidget(LiveNailOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.look.overlayAsset != widget.look.overlayAsset) {
+    if (oldWidget.look.overlayAsset != widget.look.overlayAsset ||
+        oldWidget.brownHand != widget.brownHand) {
       _load();
     }
   }
 
   Future<void> _load() async {
-    final nails = await NailLookImageCache.instance.loadFingerNails(widget.look);
+    final nails = await NailLookImageCache.instance.loadFingerNails(
+      widget.look,
+      brownHand: widget.brownHand,
+    );
     if (mounted) {
       setState(() => _fingerNails = nails);
     }
@@ -60,6 +66,7 @@ class _LiveNailOverlayState extends State<LiveNailOverlay> {
         child: CustomPaint(
           painter: _LiveNailPainter(
             hand: widget.hand,
+            look: widget.look,
             fingerNails: fingerNails,
             scale: widget.scale,
           ),
@@ -72,11 +79,13 @@ class _LiveNailOverlayState extends State<LiveNailOverlay> {
 class _LiveNailPainter extends CustomPainter {
   _LiveNailPainter({
     required this.hand,
+    required this.look,
     required this.fingerNails,
     required this.scale,
   });
 
   final TrackedHandFrame hand;
+  final NailLook look;
   final Map<NailFinger, ui.Image> fingerNails;
   final double scale;
 
@@ -96,6 +105,7 @@ class _LiveNailPainter extends CustomPainter {
         hand: hand,
         placement: placement,
         scale: scale,
+        metrics: look.cameraNailMetrics[placement.finger],
       );
       if (geometry == null) {
         continue;
@@ -110,7 +120,6 @@ class _LiveNailPainter extends CustomPainter {
         width: geometry.width,
         height: geometry.height,
       );
-      canvas.clipPath(buildNailClipPath(geometry.width, geometry.height));
 
       final srcRect = Rect.fromLTWH(
         0,
@@ -130,6 +139,7 @@ class _LiveNailPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _LiveNailPainter oldDelegate) {
     return oldDelegate.hand != hand ||
+        oldDelegate.look != look ||
         oldDelegate.fingerNails != fingerNails ||
         oldDelegate.scale != scale;
   }

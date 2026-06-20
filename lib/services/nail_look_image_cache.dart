@@ -1,9 +1,10 @@
-import 'dart:typed_data';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
+import '../core/camera/plain_hand_layout.dart';
 import '../models/nail_finger.dart';
 import '../models/nail_look.dart';
 
@@ -34,12 +35,39 @@ class NailLookImageCache {
     return frame.image;
   }
 
-  Future<Map<NailFinger, ui.Image>> loadFingerNails(NailLook look) async {
-    final cached = _fingerCache[look.overlayAsset];
+  Future<Map<NailFinger, ui.Image>> loadFingerNails(
+    NailLook look, {
+    bool brownHand = false,
+  }) async {
+    final cacheKey = '${look.id}_${brownHand ? 'brown' : 'light'}';
+    final cached = _fingerCache[cacheKey];
     if (cached != null) {
       return cached;
     }
 
+    final bakedAsset = look.plainHandAsset(brownHand: brownHand) ??
+        look.plainHandLightAsset;
+    if (bakedAsset != null && look.cameraNailCrops.isNotEmpty) {
+      final baseAsset =
+          brownHand ? PlainHandLayout.brownAsset : PlainHandLayout.lightAsset;
+      final result = await _loadFingerNailsFromBakedHand(
+        bakedAsset: bakedAsset,
+        baseAsset: baseAsset,
+        crops: look.cameraNailCrops,
+      );
+      if (result.isNotEmpty) {
+        _fingerCache[cacheKey] = result;
+        return result;
+      }
+    }
+
+    return _loadFingerNailsFromOverlay(look, cacheKey: cacheKey);
+  }
+
+  Future<Map<NailFinger, ui.Image>> _loadFingerNailsFromOverlay(
+    NailLook look, {
+    required String cacheKey,
+  }) async {
     final processed = await _loadProcessedImage(look);
     if (processed == null || look.nailCrops.isEmpty) {
       return const {};
@@ -57,14 +85,102 @@ class NailLookImageCache {
         width: rect.width.round().clamp(1, processed.width),
         height: rect.height.round().clamp(1, processed.height),
       );
-      final pngBytes = Uint8List.fromList(img.encodePng(crop));
-      final codec = await ui.instantiateImageCodec(pngBytes);
-      final frame = await codec.getNextFrame();
-      result[entry.key] = frame.image;
+      result[entry.key] = await _imageFromRaster(crop);
     }
 
-    _fingerCache[look.overlayAsset] = result;
+    _fingerCache[cacheKey] = result;
     return result;
+  }
+
+  Future<Map<NailFinger, ui.Image>> _loadFingerNailsFromBakedHand({
+    required String bakedAsset,
+    required String baseAsset,
+    required Map<NailFinger, NailFingerCrop> crops,
+  }) async {
+    final baked = await _decodeAsset(bakedAsset);
+    final base = await _decodeAsset(baseAsset);
+    if (baked == null || base == null) {
+      return const {};
+    }
+
+    final sourceSize = ui.Size(baked.width.toDouble(), baked.height.toDouble());
+    final result = <NailFinger, ui.Image>{};
+
+    for (final entry in crops.entries) {
+      final rect = entry.value.rectForSize(sourceSize);
+      final x = rect.left.round().clamp(0, baked.width - 1);
+      final y = rect.top.round().clamp(0, baked.height - 1);
+      final width = rect.width.round().clamp(1, baked.width - x);
+      final height = rect.height.round().clamp(1, baked.height - y);
+
+      final nailOnly = img.Image(width: width, height: height, numChannels: 4);
+      for (var py = 0; py < height; py++) {
+        for (var px = 0; px < width; px++) {
+          final gx = x + px;
+          final gy = y + py;
+          final geo = baked.getPixel(gx, gy);
+          final basePixel = gx < base.width && gy < base.height
+              ? base.getPixel(gx, gy)
+              : null;
+          if (!_isBakedHandNailPixel(geo, basePixel)) {
+            nailOnly.setPixelRgba(px, py, 0, 0, 0, 0);
+            continue;
+          }
+          nailOnly.setPixelRgba(px, py, geo.r, geo.g, geo.b, 255);
+        }
+      }
+
+      result[entry.key] = await _imageFromRaster(nailOnly);
+    }
+
+    return result;
+  }
+
+  bool _isBakedHandNailPixel(img.Pixel geo, img.Pixel? basePixel) {
+    if (geo.a < 40) {
+      return false;
+    }
+
+    final r = geo.r.toInt();
+    final g = geo.g.toInt();
+    final b = geo.b.toInt();
+    final maxC = [r, g, b].reduce(math.max);
+    final minC = [r, g, b].reduce(math.min);
+    final chroma = maxC - minC;
+
+    if (chroma > 28) {
+      return true;
+    }
+    if (maxC > 210 && minC > 170) {
+      return true;
+    }
+    if (maxC < 70) {
+      return true;
+    }
+    if (r > 175 && g > 125 && b > 125 && r > g && r > b) {
+      return false;
+    }
+    if (basePixel != null) {
+      final dr = (geo.r - basePixel.r).abs() +
+          (geo.g - basePixel.g).abs() +
+          (geo.b - basePixel.b).abs();
+      if (dr > 45) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<img.Image?> _decodeAsset(String assetPath) async {
+    final bytes = await rootBundle.load(assetPath);
+    return img.decodeImage(bytes.buffer.asUint8List());
+  }
+
+  Future<ui.Image> _imageFromRaster(img.Image raster) async {
+    final pngBytes = Uint8List.fromList(img.encodePng(raster));
+    final codec = await ui.instantiateImageCodec(pngBytes);
+    final frame = await codec.getNextFrame();
+    return frame.image;
   }
 
   Future<img.Image?> _loadProcessedImage(NailLook look) async {

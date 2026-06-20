@@ -103,6 +103,8 @@ flutter:
     - assets/image1.png
     - assets/hand3.png
     - assets/handbrown.png
+    - assets/handwhitegeo-removebg-preview.png
+    - assets/handbrowngeo-removebg-preview.png
     - assets/nails/
 
   # An image asset can refer to one or more resolution-specific "variants", see

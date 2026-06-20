@@ -272,7 +272,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       _selectedLook = look;
       _trackedHand = null;
     });
-    NailLookImageCache.instance.loadFingerNails(look);
+    NailLookImageCache.instance.loadFingerNails(look, brownHand: _brownHand);
     if (!_isPlain) {
       _startTrackingStream();
     }
@@ -411,6 +411,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                     LiveNailOverlay(
                       look: _selectedLook!,
                       hand: _trackedHand!,
+                      brownHand: _brownHand,
                       scale: _guideScale,
                     ),
                   if (_showGuide && !handDetected)
