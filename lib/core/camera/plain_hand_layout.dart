@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import '../../models/nail_finger.dart';
@@ -33,12 +34,37 @@ class PlainHandNailSlot {
       angle: angle,
     );
   }
+
+  /// Hit test in hand-local coordinates (same space as [toGeometry]).
+  bool containsHandPoint(Offset point, Size handSize, {double scale = 1.0}) {
+    final geometry = toGeometry(handSize, scale);
+    final local = point - geometry.center;
+    final cosA = math.cos(-geometry.angle);
+    final sinA = math.sin(-geometry.angle);
+    final unrotated = Offset(
+      local.dx * cosA - local.dy * sinA,
+      local.dx * sinA + local.dy * cosA,
+    );
+    final halfW = geometry.width / 2;
+    final halfH = geometry.height / 2;
+    return unrotated.dx.abs() <= halfW && unrotated.dy.abs() <= halfH;
+  }
+
+  static NailFinger? fingerAtHandPoint(Offset point, Size handSize, {double scale = 1.0}) {
+    for (final slot in PlainHandLayout.slots.reversed) {
+      if (slot.containsHandPoint(point, handSize, scale: scale)) {
+        return slot.finger;
+      }
+    }
+    return null;
+  }
 }
 
 abstract final class PlainHandLayout {
-  static const lightAsset = 'assets/hand3.png';
-  static const brownAsset = 'assets/handbrown.png';
-  static const aspectRatio = 375 / 666;
+  static const lightAsset = 'assets/handlight.png';
+  static const brownAsset = 'assets/handbrown2.png';
+  static const defaultNailSheetAsset = 'assets/transparent.png';
+  static const aspectRatio = 434 / 576;
 
   /// Measured from hand3.png nail-bed pixels (not the geometric catalog arc).
   static const slots = <PlainHandNailSlot>[
@@ -84,23 +110,30 @@ abstract final class PlainHandLayout {
     ),
   ];
 
+  /// Slight downward shift so fingers sit nearer the visual center (below top bar).
+  static const verticalCenterBias = 0.05;
+
+  /// Largest hand rect that fits [viewport] while keeping the photo aspect ratio.
   static Rect fitHandRect(Size viewport) {
     final viewportAspect = viewport.width / viewport.height;
+
+    late final double width;
+    late final double height;
+
     if (viewportAspect > aspectRatio) {
-      final height = viewport.height * 0.82;
-      final width = height * aspectRatio;
-      return Rect.fromLTWH(
-        (viewport.width - width) / 2,
-        viewport.height * 0.08,
-        width,
-        height,
-      );
+      height = viewport.height;
+      width = height * aspectRatio;
+    } else {
+      width = viewport.width;
+      height = width / aspectRatio;
     }
-    final width = viewport.width * 0.88;
-    final height = width / aspectRatio;
+
+    final top = (viewport.height - height) / 2 + viewport.height * verticalCenterBias;
+    final clampedTop = top.clamp(0.0, viewport.height - height);
+
     return Rect.fromLTWH(
       (viewport.width - width) / 2,
-      (viewport.height - height) / 2,
+      clampedTop,
       width,
       height,
     );

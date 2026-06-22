@@ -4,75 +4,28 @@ import 'package:flutter/material.dart';
 
 import '../core/camera/plain_hand_layout.dart';
 import '../core/camera/nail_bed_geometry.dart';
+import '../core/theme/app_colors.dart';
 import '../models/nail_finger.dart';
-import '../models/nail_look.dart';
-import '../services/nail_look_image_cache.dart';
+import '../models/plain_nail_paint.dart';
 
-/// Static hand photo for plain mode — baked look hand or base hand + patches.
-class PlainHandLookView extends StatefulWidget {
+/// Static base hand with paintable per-finger nail layers only.
+class PlainHandLookView extends StatelessWidget {
   const PlainHandLookView({
     super.key,
-    required this.look,
     required this.brownHand,
+    required this.paintState,
+    required this.fingerNailImages,
+    this.lookSheetAsset,
+    this.onFingerTap,
     this.scale = 1.0,
   });
 
-  final NailLook? look;
   final bool brownHand;
+  final PlainNailPaintState paintState;
+  final Map<NailFinger, ui.Image> fingerNailImages;
+  final String? lookSheetAsset;
+  final ValueChanged<NailFinger>? onFingerTap;
   final double scale;
-
-  @override
-  State<PlainHandLookView> createState() => _PlainHandLookViewState();
-}
-
-class _PlainHandLookViewState extends State<PlainHandLookView> {
-  Map<NailFinger, ui.Image>? _fingerNails;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNails();
-  }
-
-  @override
-  void didUpdateWidget(PlainHandLookView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.look?.overlayAsset != widget.look?.overlayAsset ||
-        oldWidget.brownHand != widget.brownHand) {
-      _loadNails();
-    }
-  }
-
-  bool get _usePatchOverlay {
-    final look = widget.look;
-    if (look == null) {
-      return false;
-    }
-    return look.plainHandAsset(brownHand: widget.brownHand) == null;
-  }
-
-  Future<void> _loadNails() async {
-    final look = widget.look;
-    if (look == null || !_usePatchOverlay) {
-      if (mounted) {
-        setState(() => _fingerNails = null);
-      }
-      return;
-    }
-    final nails = await NailLookImageCache.instance.loadFingerNails(look);
-    if (mounted) {
-      setState(() => _fingerNails = nails);
-    }
-  }
-
-  String _handAsset() {
-    final look = widget.look;
-    final baked = look?.plainHandAsset(brownHand: widget.brownHand);
-    if (baked != null) {
-      return baked;
-    }
-    return widget.brownHand ? PlainHandLayout.brownAsset : PlainHandLayout.lightAsset;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,25 +48,54 @@ class _PlainHandLookViewState extends State<PlainHandLookView> {
                       handConstraints.maxHeight,
                     );
 
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          _handAsset(),
-                          fit: BoxFit.fill,
-                          filterQuality: FilterQuality.high,
-                        ),
-                        if (_usePatchOverlay && _fingerNails != null)
-                          ...PlainHandLayout.slots.map(
+                    return GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapUp: (details) {
+                        final finger = PlainHandNailSlot.fingerAtHandPoint(
+                          details.localPosition,
+                          handSize,
+                          scale: scale,
+                        );
+                        if (finger != null) {
+                          onFingerTap?.call(finger);
+                        }
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            brownHand
+                                ? PlainHandLayout.brownAsset
+                                : PlainHandLayout.lightAsset,
+                            fit: BoxFit.fill,
+                            filterQuality: FilterQuality.high,
+                          ),
+                          if (lookSheetAsset == null)
+                            Image.asset(
+                              PlainHandLayout.defaultNailSheetAsset,
+                              fit: BoxFit.fill,
+                              filterQuality: FilterQuality.high,
+                            )
+                          else
+                            Image.asset(
+                              lookSheetAsset!,
+                              fit: BoxFit.fill,
+                              filterQuality: FilterQuality.high,
+                            ),
+                          if (lookSheetAsset == null)
+                            ...PlainHandLayout.slots.map(
                             (slot) => _PlainNailLayer(
                               slot: slot,
-                              nailImage: _fingerNails![slot.finger],
+                              nailImage: fingerNailImages[slot.finger],
+                              fingerPaint: paintState.paintFor(slot.finger),
+                              selected: paintState.selectedFinger == slot.finger,
                               handSize: handSize,
-                              scale: widget.scale,
+                              scale: scale,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -130,12 +112,16 @@ class _PlainNailLayer extends StatelessWidget {
   const _PlainNailLayer({
     required this.slot,
     required this.nailImage,
+    required this.fingerPaint,
+    required this.selected,
     required this.handSize,
     required this.scale,
   });
 
   final PlainHandNailSlot slot;
   final ui.Image? nailImage;
+  final PlainFingerNailPaint fingerPaint;
+  final bool selected;
   final Size handSize;
   final double scale;
 
@@ -150,6 +136,20 @@ class _PlainNailLayer extends StatelessWidget {
     final left = geometry.center.dx - geometry.width / 2;
     final top = geometry.center.dy - geometry.height / 2;
 
+    Widget nail = RawImage(
+      image: image,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+
+    final tint = fingerPaint.tint;
+    if (tint != null) {
+      nail = ColorFiltered(
+        colorFilter: ColorFilter.mode(tint, BlendMode.modulate),
+        child: nail,
+      );
+    }
+
     return Positioned(
       left: left,
       top: top,
@@ -157,13 +157,23 @@ class _PlainNailLayer extends StatelessWidget {
       height: geometry.height,
       child: Transform.rotate(
         angle: geometry.angle,
-        child: ClipPath(
-          clipper: _NailShapeClipper(),
-          child: RawImage(
-            image: image,
-            fit: BoxFit.fill,
-            filterQuality: FilterQuality.high,
-          ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipPath(
+              clipper: _NailShapeClipper(),
+              child: nail,
+            ),
+            if (selected)
+              IgnorePointer(
+                child: CustomPaint(
+                  painter: _NailSelectionPainter(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -178,4 +188,31 @@ class _NailShapeClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _NailSelectionPainter extends CustomPainter {
+  const _NailSelectionPainter({
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = buildNailClipPath(size.width, size.height);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _NailSelectionPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+  }
 }

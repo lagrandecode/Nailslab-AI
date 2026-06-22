@@ -1,12 +1,10 @@
 {
   "looks": [
     {
-      "id": "geometric",
-      "name": "Geometric",
-      "overlay": "assets/looks/geometric.png",
-      "thumbnail": "assets/looks/geometric.png",
-      "plain_hand_light": "assets/handwhitegeo-removebg-preview.png",
-      "plain_hand_brown": "assets/handbrowngeo-removebg-preview.png",
+      "id": "cherry",
+      "name": "Cherry",
+      "overlay": "assets/cherry.png",
+      "thumbnail": "assets/cherry.png",
       "crop_bottom": 0,
       "offset_y": 0,
       "sort_order": 1,

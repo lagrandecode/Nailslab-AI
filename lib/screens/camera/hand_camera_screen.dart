@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +11,7 @@ import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/nail_finger.dart';
 import '../../models/nail_look.dart';
+import '../../models/plain_nail_paint.dart';
 import '../../services/hand_tracking_service.dart';
 import '../../services/language_service.dart';
 import '../../services/nail_look_image_cache.dart';
@@ -41,13 +44,14 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   bool _processingFrame = false;
   bool _imageStreamActive = false;
   bool _cameraInitStarted = false;
-  double _guideScale = 1.0;
   String? _errorMessage;
   CameraPanelTab _activeTab = CameraPanelTab.looks;
   LookViewMode _viewMode = LookViewMode.plain;
   NailLook? _selectedLook;
   TrackedHandFrame? _trackedHand;
   Size _previewLayoutSize = Size.zero;
+  PlainNailPaintState _plainPaint = const PlainNailPaintState();
+  Map<NailFinger, ui.Image> _fingerNailImages = {};
 
   bool get _isPlain => _viewMode == LookViewMode.plain;
 
@@ -251,18 +255,71 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   }
 
   void _onTabChanged(CameraPanelTab tab) {
-    setState(() {
-      _activeTab = tab;
-      if (tab != CameraPanelTab.looks) {
-        _selectedLook = null;
-      }
-    });
+    setState(() => _activeTab = tab);
 
-    if (tab != CameraPanelTab.looks) {
+    if (!_isPlain && tab != CameraPanelTab.looks) {
       _stopTrackingStream();
-    } else if (_selectedLook != null && !_isPlain) {
+    } else if (!_isPlain && tab == CameraPanelTab.looks && _selectedLook != null) {
       _startTrackingStream();
     }
+  }
+
+  Future<void> _reloadPlainNailImages() async {
+    final images = <NailFinger, ui.Image>{};
+    for (final finger in NailFinger.values) {
+      final look = _plainPaint.paintFor(finger).look;
+      if (look == null) {
+        continue;
+      }
+      final nails = await NailLookImageCache.instance.loadFingerNails(
+        look,
+        brownHand: _brownHand,
+      );
+      final image = nails[finger];
+      if (image != null) {
+        images[finger] = image;
+      }
+    }
+    if (mounted) {
+      setState(() => _fingerNailImages = images);
+    }
+  }
+
+  void _onPlainFingerTap(NailFinger finger) {
+    AppHaptics.heavy();
+    setState(() {
+      _plainPaint = _plainPaint.copyWith(selectedFinger: finger);
+      _activeTab = CameraPanelTab.color;
+    });
+  }
+
+  void _onNailColorSelected(Color color) {
+    setState(() {
+      _plainPaint = _plainPaint.applyTint(
+        color,
+        finger: _plainPaint.selectedFinger,
+      );
+    });
+  }
+
+  void _onClearNailColor() {
+    setState(() {
+      _plainPaint = _plainPaint.applyTint(
+        null,
+        finger: _plainPaint.selectedFinger,
+      );
+    });
+  }
+
+  String? _plainSelectedFingerLabel() {
+    return switch (_plainPaint.selectedFinger) {
+      NailFinger.thumb => 'Painting thumb nail',
+      NailFinger.indexFinger => 'Painting index nail',
+      NailFinger.middle => 'Painting middle nail',
+      NailFinger.ring => 'Painting ring nail',
+      NailFinger.pinky => 'Painting pinky nail',
+      null => 'Tap a finger to paint one nail',
+    };
   }
 
   void _onLookSelected(NailLook look) {
@@ -271,9 +328,17 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       _activeTab = CameraPanelTab.looks;
       _selectedLook = look;
       _trackedHand = null;
+      if (_isPlain) {
+        final finger = _plainPaint.selectedFinger;
+        _plainPaint = finger != null
+            ? _plainPaint.applyLookToFinger(look, finger)
+            : _plainPaint.applyLookToAll(look);
+      }
     });
-    NailLookImageCache.instance.loadFingerNails(look, brownHand: _brownHand);
-    if (!_isPlain) {
+    if (_isPlain) {
+      _reloadPlainNailImages();
+    } else {
+      NailLookImageCache.instance.loadFingerNails(look, brownHand: _brownHand);
       _startTrackingStream();
     }
   }
@@ -297,7 +362,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
-    final trackingActive = _selectedLook != null && _activeTab == CameraPanelTab.looks;
+    final trackingActive =
+        _isPlain ? _plainPaint.hasAnyLook : _selectedLook != null && _activeTab == CameraPanelTab.looks;
     final handDetected = _trackedHand != null;
 
     return Column(
@@ -312,9 +378,12 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                   fit: StackFit.expand,
                   children: [
                     PlainHandLookView(
-                      look: trackingActive ? _selectedLook : null,
                       brownHand: _brownHand,
-                      scale: _guideScale,
+                      paintState: _plainPaint,
+                      fingerNailImages: _fingerNailImages,
+                      lookSheetAsset:
+                          _plainPaint.hasAnyLook ? _selectedLook?.overlayAsset : null,
+                      onFingerTap: _onPlainFingerTap,
                     ),
                     SafeArea(
                       bottom: false,
@@ -333,22 +402,11 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                             plainMode: true,
                             trackingActive: trackingActive,
                             handDetected: handDetected,
-                            lookSelected: _selectedLook != null,
+                            lookSelected: _isPlain ? _plainPaint.hasAnyLook : _selectedLook != null,
                           ),
                         ],
                       ),
                     ),
-                    if (_showGuide)
-                      Positioned(
-                        left: 48,
-                        right: 48,
-                        bottom: 16,
-                        child: _GuideScaleSlider(
-                          plainMode: true,
-                          value: _guideScale,
-                          onChanged: (value) => setState(() => _guideScale = value),
-                        ),
-                      ),
                     Positioned(
                       left: 0,
                       right: 0,
@@ -358,7 +416,10 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                           const Spacer(),
                           _SkinToneToggle(
                             brownHand: _brownHand,
-                            onTap: () => setState(() => _brownHand = !_brownHand),
+                            onTap: () {
+                              setState(() => _brownHand = !_brownHand);
+                              _reloadPlainNailImages();
+                            },
                           ),
                           const SizedBox(width: 16),
                         ],
@@ -412,25 +473,12 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                       look: _selectedLook!,
                       hand: _trackedHand!,
                       brownHand: _brownHand,
-                      scale: _guideScale,
                     ),
                   if (_showGuide && !handDetected)
                     Center(
                       child: HandTraceOverlay(
                         isLeftHand: _isLeftHand,
                         height: guideHeight,
-                        scale: _guideScale,
-                      ),
-                    ),
-                  if (_showGuide)
-                    Positioned(
-                      left: 48,
-                      right: 48,
-                      bottom: 16,
-                      child: _GuideScaleSlider(
-                        plainMode: false,
-                        value: _guideScale,
-                        onChanged: (value) => setState(() => _guideScale = value),
                       ),
                     ),
                   Positioned(
@@ -470,6 +518,10 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
             selectedLookId: _selectedLook?.id,
             onTabChanged: _onTabChanged,
             onLookSelected: _onLookSelected,
+            plainMode: _isPlain,
+            selectedFingerLabel: _isPlain ? _plainSelectedFingerLabel() : null,
+            onColorSelected: _isPlain ? _onNailColorSelected : null,
+            onClearColor: _isPlain ? _onClearNailColor : null,
           )
         else
           const SizedBox(
@@ -579,9 +631,13 @@ class _HintBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (plainMode && !lookSelected) {
+      return const SizedBox.shrink();
+    }
+
     final String text;
     if (plainMode) {
-      text = lookSelected ? TryOnStrings.plainLookAppliedHint : TryOnStrings.plainPickLookHint;
+      text = TryOnStrings.plainLookAppliedHint;
     } else if (trackingActive && handDetected) {
       text = TryOnStrings.holdHandHint;
     } else if (trackingActive) {
@@ -615,42 +671,6 @@ class _HintBanner extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _GuideScaleSlider extends StatelessWidget {
-  const _GuideScaleSlider({
-    required this.plainMode,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final bool plainMode;
-  final double value;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SliderTheme(
-      data: SliderThemeData(
-        trackHeight: 2,
-        activeTrackColor: plainMode
-            ? AppColors.title.withValues(alpha: 0.2)
-            : Colors.white.withValues(alpha: 0.35),
-        inactiveTrackColor: plainMode
-            ? AppColors.title.withValues(alpha: 0.2)
-            : Colors.white.withValues(alpha: 0.35),
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-        overlayShape: SliderComponentShape.noOverlay,
-        thumbColor: AppColors.primary,
-      ),
-      child: Slider(
-        value: value,
-        min: 0.75,
-        max: 1.35,
-        onChanged: onChanged,
       ),
     );
   }

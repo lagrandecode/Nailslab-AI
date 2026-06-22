@@ -248,20 +248,6 @@ abstract final class TryOnStrings {
     'ar': 'اضغط للكاميرا',
   });
 
-  static String get plainPickLookHint => _t('Tap a look to paint the nails', {
-    'zh': '点击造型以涂上美甲',
-    'hi': 'नेल पेंट करने के लिए लुक टैप करें',
-    'es': 'Toca un look para pintar las uñas',
-    'fr': 'Appuyez sur un look pour peindre les ongles',
-    'de': 'Tippe einen Look an, um Nägel zu lackieren',
-    'ru': 'Нажмите стиль, чтобы нанести маникюр',
-    'pt': 'Toque num look para pintar as unhas',
-    'it': 'Tocca un look per dipingere le unghie',
-    'ro': 'Atinge un look pentru a picta unghiile',
-    'nl': 'Tik een look om nagels te schilderen',
-    'ar': 'اضغط على مظهر لطلاء الأظافر',
-  });
-
   static String get plainLookAppliedHint => _t('Look applied — tap another style', {
     'zh': '已应用造型 — 点击其他风格',
     'hi': 'लुक लगाया गया — दूसरा स्टाइल टैप करें',

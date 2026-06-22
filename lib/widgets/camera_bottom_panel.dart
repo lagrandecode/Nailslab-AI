@@ -6,6 +6,18 @@ import '../models/nail_look.dart';
 
 enum CameraPanelTab { looks, color, aiGenerate }
 
+/// Preset nail polish colors for plain-mode finger painting.
+const plainNailColors = <Color>[
+  Color(0xFFC41230),
+  Color(0xFFE91E8C),
+  Color(0xFFFF6B35),
+  Color(0xFFD4AF37),
+  Color(0xFFB76E79),
+  Color(0xFF9B59B6),
+  Color(0xFF1A1A1A),
+  Color(0xFFF5F5F5),
+];
+
 class CameraBottomPanel extends StatelessWidget {
   const CameraBottomPanel({
     super.key,
@@ -14,6 +26,10 @@ class CameraBottomPanel extends StatelessWidget {
     required this.selectedLookId,
     required this.onTabChanged,
     required this.onLookSelected,
+    this.plainMode = false,
+    this.selectedFingerLabel,
+    this.onColorSelected,
+    this.onClearColor,
   });
 
   final CameraPanelTab activeTab;
@@ -21,6 +37,10 @@ class CameraBottomPanel extends StatelessWidget {
   final String? selectedLookId;
   final ValueChanged<CameraPanelTab> onTabChanged;
   final ValueChanged<NailLook> onLookSelected;
+  final bool plainMode;
+  final String? selectedFingerLabel;
+  final ValueChanged<Color>? onColorSelected;
+  final VoidCallback? onClearColor;
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +71,58 @@ class CameraBottomPanel extends StatelessWidget {
                 },
               ),
             )
+          else if (activeTab == CameraPanelTab.color && plainMode)
+            SizedBox(
+              height: 88,
+              child: Column(
+                children: [
+                  if (selectedFingerLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Text(
+                        selectedFingerLabel!,
+                        style: TextStyle(
+                          color: AppColors.title.withValues(alpha: 0.55),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      itemCount: plainNailColors.length + 1,
+                      separatorBuilder: (context, index) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return _ColorSwatch(
+                            color: Colors.transparent,
+                            isClear: true,
+                            onTap: onClearColor,
+                          );
+                        }
+                        final color = plainNailColors[index - 1];
+                        return _ColorSwatch(
+                          color: color,
+                          onTap: () {
+                            AppHaptics.heavy();
+                            onColorSelected?.call(color);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            )
           else
             SizedBox(
               height: 56,
               child: Center(
                 child: Text(
                   activeTab == CameraPanelTab.color
-                      ? 'Color presets coming soon'
+                      ? 'Switch to plain mode to paint nail colors'
                       : 'Capture a photo to use AI Generate',
                   style: TextStyle(
                     color: AppColors.title.withValues(alpha: 0.55),
@@ -98,6 +163,44 @@ class CameraBottomPanel extends StatelessWidget {
   }
 }
 
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch({
+    required this.color,
+    this.isClear = false,
+    this.onTap,
+  });
+
+  final Color color;
+  final bool isClear;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isClear ? Colors.white : color,
+          border: Border.all(
+            color: AppColors.title.withValues(alpha: isClear ? 0.25 : 0.12),
+            width: isClear ? 1.5 : 1,
+          ),
+        ),
+        child: isClear
+            ? Icon(
+                Icons.close,
+                size: 18,
+                color: AppColors.title.withValues(alpha: 0.45),
+              )
+            : null,
+      ),
+    );
+  }
+}
+
 class _LookThumbnail extends StatelessWidget {
   const _LookThumbnail({
     required this.look,
@@ -118,35 +221,35 @@ class _LookThumbnail extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: DecoratedBox(
+              child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: selected ? AppColors.primary : const Color(0xFFE0E0E0),
-                    width: selected ? 2 : 1,
+                    color: selected ? AppColors.primary : Colors.transparent,
+                    width: 2,
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(6),
                   child: Image.asset(
                     look.thumbnailAsset,
                     fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
+                    width: double.infinity,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               look.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? AppColors.primary : AppColors.title,
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.title.withValues(alpha: 0.7),
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],
@@ -180,15 +283,19 @@ class _TabButton extends StatelessWidget {
             Icon(
               icon,
               size: 22,
-              color: selected ? AppColors.primary : AppColors.title.withValues(alpha: 0.45),
+              color: selected
+                  ? AppColors.primary
+                  : AppColors.title.withValues(alpha: 0.45),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? AppColors.primary : AppColors.title.withValues(alpha: 0.45),
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.title.withValues(alpha: 0.45),
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],

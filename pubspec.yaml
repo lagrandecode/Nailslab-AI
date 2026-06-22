@@ -101,10 +101,12 @@ flutter:
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
     - assets/image1.png
-    - assets/hand3.png
-    - assets/handbrown.png
+    - assets/handlight.png
+    - assets/handbrown2.png
     - assets/handwhitegeo-removebg-preview.png
     - assets/handbrowngeo-removebg-preview.png
+    - assets/transparent.png
+    - assets/cherry.png
     - assets/nails/
 
   # An image asset can refer to one or more resolution-specific "variants", see
