@@ -63,10 +63,10 @@ class PlainHandNailSlot {
 abstract final class PlainHandLayout {
   static const lightAsset = 'assets/handlight.png';
   static const brownAsset = 'assets/handbrown2.png';
-  static const defaultNailSheetAsset = 'assets/transparent.png';
+  static const cherryAsset = 'assets/cherry2.png';
   static const aspectRatio = 434 / 576;
 
-  /// Measured from hand3.png nail-bed pixels (not the geometric catalog arc).
+  /// Finger tap zones on the 434×576 hand photo.
   static const slots = <PlainHandNailSlot>[
     PlainHandNailSlot(
       finger: NailFinger.pinky,

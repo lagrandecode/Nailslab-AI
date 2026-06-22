@@ -3,32 +3,9 @@
     {
       "id": "cherry",
       "name": "Cherry",
-      "overlay": "assets/cherry.png",
-      "thumbnail": "assets/cherry.png",
-      "crop_bottom": 0,
-      "offset_y": 0,
-      "sort_order": 1,
-      "nail_crops": {
-        "pinky": { "x": 0.093, "y": 0.389, "w": 0.206, "h": 0.154 },
-        "ring": { "x": 0.250, "y": 0.332, "w": 0.164, "h": 0.165 },
-        "middle": { "x": 0.426, "y": 0.307, "w": 0.150, "h": 0.168 },
-        "index": { "x": 0.588, "y": 0.333, "w": 0.162, "h": 0.163 },
-        "thumb": { "x": 0.703, "y": 0.389, "w": 0.194, "h": 0.154 }
-      },
-      "camera_nail_crops": {
-        "pinky": { "x": 0.032, "y": 0.360, "w": 0.115, "h": 0.101 },
-        "ring": { "x": 0.256, "y": 0.299, "w": 0.083, "h": 0.119 },
-        "middle": { "x": 0.419, "y": 0.269, "w": 0.109, "h": 0.125 },
-        "index": { "x": 0.605, "y": 0.290, "w": 0.120, "h": 0.119 },
-        "thumb": { "x": 0.720, "y": 0.339, "w": 0.261, "h": 0.182 }
-      },
-      "camera_nail_size": {
-        "pinky": { "width_over_bed": 0.642, "height_over_bed": 1.0, "center_along_bed": 0.58 },
-        "ring": { "width_over_bed": 0.392, "height_over_bed": 1.0, "center_along_bed": 0.58 },
-        "middle": { "width_over_bed": 0.494, "height_over_bed": 1.0, "center_along_bed": 0.58 },
-        "index": { "width_over_bed": 0.570, "height_over_bed": 1.0, "center_along_bed": 0.58 },
-        "thumb": { "width_over_bed": 0.810, "height_over_bed": 1.0, "center_along_bed": 0.56 }
-      }
+      "overlay": "assets/cherry2.png",
+      "thumbnail": "assets/cherry2.png",
+      "sort_order": 1
     }
   ]
 }

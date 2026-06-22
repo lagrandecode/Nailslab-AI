@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +5,7 @@ import 'package:hand_detection/hand_detection.dart';
 
 import '../../constants/try_on_strings.dart';
 import '../../core/camera/hand_guide_layout.dart';
+import '../../core/camera/plain_hand_layout.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/nail_finger.dart';
@@ -51,7 +50,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   TrackedHandFrame? _trackedHand;
   Size _previewLayoutSize = Size.zero;
   PlainNailPaintState _plainPaint = const PlainNailPaintState();
-  Map<NailFinger, ui.Image> _fingerNailImages = {};
 
   bool get _isPlain => _viewMode == LookViewMode.plain;
 
@@ -63,8 +61,15 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
   Future<void> _init() async {
     await _lookRepository.ensureLoaded();
+    final cherry = _lookRepository.byId('cherry');
     if (mounted) {
-      setState(() => _looksLoaded = true);
+      setState(() {
+        _looksLoaded = true;
+        if (cherry != null) {
+          _selectedLook = cherry;
+          _plainPaint = _plainPaint.applyLookToAll(cherry);
+        }
+      });
     }
   }
 
@@ -264,27 +269,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     }
   }
 
-  Future<void> _reloadPlainNailImages() async {
-    final images = <NailFinger, ui.Image>{};
-    for (final finger in NailFinger.values) {
-      final look = _plainPaint.paintFor(finger).look;
-      if (look == null) {
-        continue;
-      }
-      final nails = await NailLookImageCache.instance.loadFingerNails(
-        look,
-        brownHand: _brownHand,
-      );
-      final image = nails[finger];
-      if (image != null) {
-        images[finger] = image;
-      }
-    }
-    if (mounted) {
-      setState(() => _fingerNailImages = images);
-    }
-  }
-
   void _onPlainFingerTap(NailFinger finger) {
     AppHaptics.heavy();
     setState(() {
@@ -335,9 +319,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
             : _plainPaint.applyLookToAll(look);
       }
     });
-    if (_isPlain) {
-      _reloadPlainNailImages();
-    } else {
+    if (!_isPlain) {
       NailLookImageCache.instance.loadFingerNails(look, brownHand: _brownHand);
       _startTrackingStream();
     }
@@ -362,8 +344,9 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
-    final trackingActive =
-        _isPlain ? _plainPaint.hasAnyLook : _selectedLook != null && _activeTab == CameraPanelTab.looks;
+    final trackingActive = _isPlain
+        ? _selectedLook != null
+        : _selectedLook != null && _activeTab == CameraPanelTab.looks;
     final handDetected = _trackedHand != null;
 
     return Column(
@@ -379,10 +362,9 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                   children: [
                     PlainHandLookView(
                       brownHand: _brownHand,
-                      paintState: _plainPaint,
-                      fingerNailImages: _fingerNailImages,
-                      lookSheetAsset:
-                          _plainPaint.hasAnyLook ? _selectedLook?.overlayAsset : null,
+                      nailSheetAsset:
+                          _selectedLook?.overlayAsset ?? PlainHandLayout.cherryAsset,
+                      selectedFinger: _plainPaint.selectedFinger,
                       onFingerTap: _onPlainFingerTap,
                     ),
                     SafeArea(
@@ -402,7 +384,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                             plainMode: true,
                             trackingActive: trackingActive,
                             handDetected: handDetected,
-                            lookSelected: _isPlain ? _plainPaint.hasAnyLook : _selectedLook != null,
+                            lookSelected: _selectedLook != null,
                           ),
                         ],
                       ),
@@ -416,10 +398,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                           const Spacer(),
                           _SkinToneToggle(
                             brownHand: _brownHand,
-                            onTap: () {
-                              setState(() => _brownHand = !_brownHand);
-                              _reloadPlainNailImages();
-                            },
+                            onTap: () => setState(() => _brownHand = !_brownHand),
                           ),
                           const SizedBox(width: 16),
                         ],
@@ -631,14 +610,12 @@ class _HintBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (plainMode && !lookSelected) {
+    if (plainMode) {
       return const SizedBox.shrink();
     }
 
     final String text;
-    if (plainMode) {
-      text = TryOnStrings.plainLookAppliedHint;
-    } else if (trackingActive && handDetected) {
+    if (trackingActive && handDetected) {
       text = TryOnStrings.holdHandHint;
     } else if (trackingActive) {
       text = TryOnStrings.detectingHandHint;
@@ -646,12 +623,9 @@ class _HintBanner extends StatelessWidget {
       text = TryOnStrings.whiteBackgroundHint;
     }
 
-    final bannerColor = plainMode
-        ? AppColors.title.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.45);
-    final textColor = plainMode
-        ? AppColors.title.withValues(alpha: 0.72)
-        : (handDetected ? Colors.greenAccent.shade100 : AppColors.primaryLight);
+    final bannerColor = Colors.black.withValues(alpha: 0.45);
+    final textColor =
+        handDetected ? Colors.greenAccent.shade100 : AppColors.primaryLight;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
