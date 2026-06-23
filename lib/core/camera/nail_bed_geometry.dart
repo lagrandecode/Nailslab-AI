@@ -1,23 +1,29 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../../models/nail_bed_geometry.dart';
 import '../../models/nail_finger.dart';
 
-/// Computes on-screen size, rotation, and center for painting one nail.
-class NailBedGeometry {
-  const NailBedGeometry({
-    required this.center,
-    required this.width,
-    required this.height,
-    required this.angle,
-  });
+/// Nudge live camera nails toward the fingertip (fraction of distal phalanx length).
+const double kCameraNailTipShiftBed = 0.17;
 
-  final Offset center;
-  final double width;
-  final double height;
-  final double angle;
+NailBedGeometry nudgeCameraNailTowardTip(
+  NailBedGeometry geometry, {
+  required Offset along,
+  required double bedLength,
+}) {
+  if (bedLength < 1) {
+    return geometry;
+  }
+  return NailBedGeometry(
+    center: geometry.center + along * (bedLength * kCameraNailTipShiftBed),
+    width: geometry.width,
+    height: geometry.height,
+    angle: geometry.angle,
+  );
 }
 
+/// Computes on-screen size, rotation, and center for painting one nail.
 NailBedGeometry? computeNailBedGeometry({
   required TrackedHandFrame hand,
   required NailFingerPlacement placement,
@@ -33,49 +39,63 @@ NailBedGeometry? computeNailBedGeometry({
   }
 
   final axis = tip - joint;
-  final nailBedLength = axis.distance;
-  if (nailBedLength < 8) {
+  final bedLength = axis.distance;
+  if (bedLength < 8) {
     return null;
   }
 
-  final direction = axis / nailBedLength;
-  final fingerWidth = (pip - mcp).distance;
+  final direction = axis / bedLength;
+  final perpendicular = Offset(-direction.dy, direction.dx);
+  final knuckleWidth = (pip - mcp).distance.clamp(8.0, 999.0);
 
   final double width;
   final double height;
   final double centerAlongBed;
+  final double angleOffset;
+  final double alongOffset;
+  final double acrossOffset;
 
   if (metrics != null) {
-    width = (nailBedLength * metrics.widthOverBed * scale).clamp(10.0, 100.0);
-    height = (nailBedLength * metrics.heightOverBed * scale).clamp(12.0, 120.0);
+    width = (bedLength * metrics.widthOverBed * scale).clamp(10.0, 110.0);
+    height = (bedLength * metrics.heightOverBed * scale).clamp(12.0, 130.0);
     centerAlongBed = metrics.centerAlongBed;
+    angleOffset = metrics.angleOffset;
+    alongOffset = metrics.alongOffsetBed;
+    acrossOffset = metrics.acrossOffsetBed;
   } else {
     final widthFactor = switch (placement.finger) {
-      NailFinger.thumb => 0.58,
-      NailFinger.pinky => 0.46,
-      NailFinger.middle => 0.50,
-      _ => 0.48,
+      NailFinger.thumb => 0.95,
+      NailFinger.pinky => 0.82,
+      NailFinger.middle => 0.88,
+      _ => 0.85,
     };
-    final heightFactor = switch (placement.finger) {
-      NailFinger.thumb => 1.05,
-      _ => 1.12,
-    };
-
-    width = (fingerWidth * widthFactor * scale).clamp(14.0, 120.0);
-    height = (nailBedLength * heightFactor * scale).clamp(16.0, 140.0);
-    centerAlongBed = 0.56;
+    width = (knuckleWidth * widthFactor * scale).clamp(12.0, 110.0);
+    height = (bedLength * 1.05 * scale).clamp(14.0, 130.0);
+    centerAlongBed = 0.50;
+    angleOffset = 0;
+    alongOffset = 0;
+    acrossOffset = 0;
   }
 
-  final center = joint + direction * (nailBedLength * centerAlongBed);
+  // Tip-anchored: pull center back from tip so cuticle sits near the joint.
+  // centerAlongBed 0.5 ≈ nail centered on distal phalanx.
+  final tipPullback = height * (0.52 - (centerAlongBed - 0.5) * 0.9);
+  var center = tip - direction * tipPullback;
+  center += direction * (bedLength * alongOffset);
+  center += perpendicular * (bedLength * acrossOffset);
 
-  // Align nail art so the cuticle edge sits toward the joint and tip points outward.
-  final angle = math.atan2(direction.dy, direction.dx) + math.pi / 2;
+  // Nail art tip points along the finger toward the tip landmark.
+  final angle = math.atan2(direction.dy, direction.dx) + math.pi / 2 + angleOffset;
 
-  return NailBedGeometry(
-    center: center,
-    width: width,
-    height: height,
-    angle: angle,
+  return nudgeCameraNailTowardTip(
+    NailBedGeometry(
+      center: center,
+      width: width,
+      height: height,
+      angle: angle,
+    ),
+    along: direction,
+    bedLength: bedLength,
   );
 }
 

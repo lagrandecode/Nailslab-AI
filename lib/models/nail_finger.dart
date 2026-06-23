@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:hand_detection/hand_detection.dart';
 
+import 'nail_bed_geometry.dart';
+
 enum NailFinger {
   thumb,
   indexFinger,
@@ -42,37 +44,48 @@ class NailFingerCrop {
   }
 }
 
-/// Per-finger sizing for live camera, measured from the baked plain-hand look.
+/// Per-finger sizing for live camera, measured from the nail sheet reference.
 class CameraNailMetrics {
   const CameraNailMetrics({
     required this.widthOverBed,
     this.heightOverBed = 1.0,
-    this.centerAlongBed = 0.58,
+    this.centerAlongBed = 0.50,
+    this.angleOffset = 0,
+    this.alongOffsetBed = 0,
+    this.acrossOffsetBed = 0,
   });
 
-  /// Nail width ÷ reference nail-bed length on the baked hand photo.
+  /// Nail width ÷ distal phalanx length (tip–joint).
   final double widthOverBed;
-  /// Nail height ÷ reference nail-bed length on the baked hand photo.
+  /// Nail height ÷ distal phalanx length.
   final double heightOverBed;
-  /// Position along the tip–joint axis (0 = joint, 1 = tip).
+  /// Tip-anchored placement: 0.5 = centered between joint and tip.
   final double centerAlongBed;
+  /// Extra rotation in radians (nail art vs finger axis).
+  final double angleOffset;
+  /// Shift along the finger axis, in units of bed length.
+  final double alongOffsetBed;
+  /// Shift perpendicular to the finger axis, in units of bed length.
+  final double acrossOffsetBed;
 
   factory CameraNailMetrics.fromJson(Map<String, dynamic> json) {
     if (json.containsKey('width_over_bed')) {
       return CameraNailMetrics(
         widthOverBed: (json['width_over_bed'] as num).toDouble(),
         heightOverBed: (json['height_over_bed'] as num?)?.toDouble() ?? 1.0,
-        centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.58,
+        centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.50,
+        angleOffset: (json['angle_offset'] as num?)?.toDouble() ?? 0,
+        alongOffsetBed: (json['along_offset_bed'] as num?)?.toDouble() ?? 0,
+        acrossOffsetBed: (json['across_offset_bed'] as num?)?.toDouble() ?? 0,
       );
     }
 
-    // Legacy catalog entries sized by finger width — convert approximately.
     final widthOverFinger = (json['width_over_finger'] as num?)?.toDouble() ?? 0.5;
     final heightOverWidth = (json['height_over_width'] as num?)?.toDouble() ?? 1.1;
     return CameraNailMetrics(
       widthOverBed: widthOverFinger * 0.55,
       heightOverBed: heightOverWidth * 0.45,
-      centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.58,
+      centerAlongBed: (json['center_along_bed'] as num?)?.toDouble() ?? 0.50,
     );
   }
 }
@@ -191,10 +204,16 @@ class TrackedHandFrame {
     required this.visibility,
     required this.confidence,
     this.handedness,
+    this.sourceLandmarks = const {},
+    this.sourceImageSize,
+    this.nailGeometry = const {},
   });
 
   final Map<HandLandmarkType, Offset> landmarks;
   final Map<HandLandmarkType, double> visibility;
   final Handedness? handedness;
   final double confidence;
+  final Map<HandLandmarkType, Offset> sourceLandmarks;
+  final Size? sourceImageSize;
+  final Map<NailFinger, NailBedGeometry> nailGeometry;
 }

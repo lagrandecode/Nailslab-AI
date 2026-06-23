@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../../models/nail_bed_geometry.dart';
 import '../../models/nail_finger.dart';
-import 'nail_bed_geometry.dart';
+import '../../models/nail_look.dart';
 
 /// Fixed nail positions on the plain hand photo assets (375×666, fingers up).
 class PlainHandNailSlot {
@@ -66,49 +67,71 @@ abstract final class PlainHandLayout {
   static const cherryAsset = 'assets/cherry2.png';
   static const aspectRatio = 434 / 576;
 
-  /// Finger tap zones on the 434×576 hand photo.
+  /// Finger slots measured from assets/cherry2.png on the 434×576 hand canvas.
   static const slots = <PlainHandNailSlot>[
     PlainHandNailSlot(
       finger: NailFinger.pinky,
-      centerX: 0.088,
-      centerY: 0.402,
-      width: 0.072,
-      height: 0.052,
+      centerX: 0.059,
+      centerY: 0.386,
+      width: 0.062,
+      height: 0.066,
       angle: -0.18,
     ),
     PlainHandNailSlot(
       finger: NailFinger.ring,
-      centerX: 0.278,
-      centerY: 0.358,
-      width: 0.074,
-      height: 0.054,
+      centerX: 0.283,
+      centerY: 0.207,
+      width: 0.065,
+      height: 0.080,
       angle: -0.08,
     ),
     PlainHandNailSlot(
       finger: NailFinger.middle,
-      centerX: 0.478,
-      centerY: 0.330,
-      width: 0.078,
-      height: 0.056,
+      centerX: 0.487,
+      centerY: 0.154,
+      width: 0.062,
+      height: 0.082,
       angle: 0,
     ),
     PlainHandNailSlot(
       finger: NailFinger.indexFinger,
-      centerX: 0.665,
-      centerY: 0.348,
-      width: 0.074,
-      height: 0.054,
+      centerX: 0.710,
+      centerY: 0.216,
+      width: 0.065,
+      height: 0.077,
       angle: 0.10,
     ),
     PlainHandNailSlot(
       finger: NailFinger.thumb,
-      centerX: 0.848,
-      centerY: 0.438,
-      width: 0.082,
-      height: 0.050,
+      centerX: 0.935,
+      centerY: 0.584,
+      width: 0.078,
+      height: 0.066,
       angle: 0.55,
     ),
   ];
+
+  /// Build paint slots from a look sheet catalog entry (same canvas as the hand).
+  static List<PlainHandNailSlot> slotsForLook(NailLook? look) {
+    if (look == null || look.nailCrops.isEmpty) {
+      return slots;
+    }
+    return NailFinger.values.map((finger) {
+      final crop = look.nailCrops[finger];
+      final fallback = slots.firstWhere((slot) => slot.finger == finger);
+      if (crop == null) {
+        return fallback;
+      }
+      return PlainHandNailSlot(
+        finger: finger,
+        centerX: crop.x + crop.w / 2,
+        centerY: crop.y + crop.h / 2,
+        width: crop.w,
+        height: crop.h,
+        angle: fallback.angle,
+      );
+    }).toList();
+  }
 
   /// Slight downward shift so fingers sit nearer the visual center (below top bar).
   static const verticalCenterBias = 0.05;

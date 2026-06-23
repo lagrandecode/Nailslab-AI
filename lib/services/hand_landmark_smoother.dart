@@ -8,7 +8,7 @@ import '../models/nail_finger.dart';
 class HandLandmarkSmoother {
   TrackedHandFrame? _previous;
 
-  static const double _alpha = 0.42;
+  static const double _alpha = 0.55;
 
   TrackedHandFrame smooth(TrackedHandFrame current) {
     final previous = _previous;
@@ -25,11 +25,22 @@ class HandLandmarkSmoother {
           : Offset.lerp(prior, entry.value, _alpha)!;
     }
 
+    final sourceSmoothed = <HandLandmarkType, Offset>{};
+    for (final entry in current.sourceLandmarks.entries) {
+      final prior = previous.sourceLandmarks[entry.key];
+      sourceSmoothed[entry.key] = prior == null
+          ? entry.value
+          : Offset.lerp(prior, entry.value, _alpha)!;
+    }
+
     final frame = TrackedHandFrame(
       landmarks: smoothed,
       visibility: current.visibility,
       handedness: current.handedness,
       confidence: current.confidence,
+      sourceLandmarks: sourceSmoothed,
+      sourceImageSize: current.sourceImageSize,
+      nailGeometry: current.nailGeometry,
     );
     _previous = frame;
     return frame;

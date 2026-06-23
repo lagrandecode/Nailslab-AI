@@ -101,12 +101,13 @@ class _LiveNailPainter extends CustomPainter {
         continue;
       }
 
-      final geometry = computeNailBedGeometry(
-        hand: hand,
-        placement: placement,
-        scale: scale,
-        metrics: look.cameraNailMetrics[placement.finger],
-      );
+      final geometry = hand.nailGeometry[placement.finger] ??
+          computeNailBedGeometry(
+            hand: hand,
+            placement: placement,
+            scale: scale,
+            metrics: look.cameraNailMetrics[placement.finger],
+          );
       if (geometry == null) {
         continue;
       }

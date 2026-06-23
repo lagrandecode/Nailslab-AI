@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +7,6 @@ import 'package:hand_detection/hand_detection.dart';
 
 import '../../constants/try_on_strings.dart';
 import '../../core/camera/hand_guide_layout.dart';
-import '../../core/camera/plain_hand_layout.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/nail_finger.dart';
@@ -50,6 +51,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   TrackedHandFrame? _trackedHand;
   Size _previewLayoutSize = Size.zero;
   PlainNailPaintState _plainPaint = const PlainNailPaintState();
+  Map<NailFinger, ui.Image> _fingerNailImages = {};
 
   bool get _isPlain => _viewMode == LookViewMode.plain;
 
@@ -70,6 +72,16 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
           _plainPaint = _plainPaint.applyLookToAll(cherry);
         }
       });
+      if (cherry != null) {
+        await _loadPlainFingerNails(cherry);
+      }
+    }
+  }
+
+  Future<void> _loadPlainFingerNails(NailLook look) async {
+    final nails = await NailLookImageCache.instance.loadFingerNails(look);
+    if (mounted) {
+      setState(() => _fingerNailImages = nails);
     }
   }
 
@@ -196,6 +208,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
         image: image,
         controller: controller,
         screenSize: _previewLayoutSize,
+        metricsByFinger: _selectedLook?.cameraNailMetrics ?? const {},
       );
 
       if (!mounted) {
@@ -322,6 +335,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     if (!_isPlain) {
       NailLookImageCache.instance.loadFingerNails(look, brownHand: _brownHand);
       _startTrackingStream();
+    } else {
+      _loadPlainFingerNails(look);
     }
   }
 
@@ -362,9 +377,9 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                   children: [
                     PlainHandLookView(
                       brownHand: _brownHand,
-                      nailSheetAsset:
-                          _selectedLook?.overlayAsset ?? PlainHandLayout.cherryAsset,
-                      selectedFinger: _plainPaint.selectedFinger,
+                      look: _selectedLook,
+                      fingerNailImages: _fingerNailImages,
+                      paintState: _plainPaint,
                       onFingerTap: _onPlainFingerTap,
                     ),
                     SafeArea(
