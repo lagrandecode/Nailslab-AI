@@ -160,10 +160,10 @@ bool isFingerActiveForPaint(
     return false;
   }
 
-  if ((hand.visibility[placement.tip] ?? 0) < 0.4) {
+  if ((hand.visibility[placement.tip] ?? 0) < 0.35) {
     return false;
   }
-  if ((hand.visibility[placement.joint] ?? 0) < 0.25) {
+  if ((hand.visibility[placement.joint] ?? 0) < 0.2) {
     return false;
   }
 
@@ -182,7 +182,7 @@ bool isFingerActiveForPaint(
             hand.landmarks[p.tip] != null && (hand.visibility[p.tip] ?? 0) >= 0.45,
       )
       .length;
-  final minRatio = visibleTips >= 4 ? 1.06 : placement.minExtensionRatio;
+  final minRatio = visibleTips >= 4 ? 1.02 : placement.minExtensionRatio * 0.92;
 
   return extensionRatio >= minRatio;
 }
@@ -206,6 +206,7 @@ class TrackedHandFrame {
     this.handedness,
     this.sourceLandmarks = const {},
     this.sourceImageSize,
+    this.landmarkDepth = const {},
     this.nailGeometry = const {},
   });
 
@@ -215,5 +216,7 @@ class TrackedHandFrame {
   final double confidence;
   final Map<HandLandmarkType, Offset> sourceLandmarks;
   final Size? sourceImageSize;
+  /// MediaPipe depth (z) per landmark — used for 3D finger rotation.
+  final Map<HandLandmarkType, double> landmarkDepth;
   final Map<NailFinger, NailBedGeometry> nailGeometry;
 }

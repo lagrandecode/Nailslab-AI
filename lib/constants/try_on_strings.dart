@@ -62,6 +62,38 @@ abstract final class TryOnStrings {
     'ar': 'إعادة التقاط',
   });
 
+  static String get done => _t('Done', {
+    'zh': '完成',
+    'hi': 'हो गया',
+    'es': 'Listo',
+    'fr': 'Terminé',
+    'de': 'Fertig',
+    'ru': 'Готово',
+    'pt': 'Concluir',
+    'it': 'Fine',
+    'ro': 'Gata',
+    'nl': 'Klaar',
+    'ar': 'تم',
+  });
+
+  static String get handNotFoundOnPhoto => _t(
+        'Could not find your hand. Hold your fingers out and try again.',
+        {
+          'zh': '未检测到手部。请张开手指后重试。',
+          'es': 'No se detectó tu mano. Extiende los dedos e inténtalo de nuevo.',
+          'fr': 'Main non détectée. Écartez les doigts et réessayez.',
+        },
+      );
+
+  static String get fineTuneHint => _t(
+        'Select a finger, drag to move, use tools to resize or rotate',
+        {
+          'zh': '选择手指，拖动调整位置，用工具缩放或旋转',
+          'es': 'Elige un dedo, arrastra para mover, usa las herramientas para ajustar',
+          'fr': 'Choisissez un doigt, faites glisser, utilisez les outils pour ajuster',
+        },
+      );
+
   static String get selectStyle => _t('Pick a nail style', {
     'zh': '选择美甲风格',
     'hi': 'नेल स्टाइल चुनें',

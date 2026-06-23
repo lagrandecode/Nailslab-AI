@@ -20,6 +20,87 @@ NailBedGeometry nudgeCameraNailTowardTip(
     width: geometry.width,
     height: geometry.height,
     angle: geometry.angle,
+    quad: geometry.quad
+        ?.map((corner) => corner + along * (bedLength * kCameraNailTipShiftBed))
+        .toList(),
+  );
+}
+
+/// Builds a perspective quad from 3D landmark depth so nails tilt with the finger.
+List<Offset>? computeNailPerspectiveQuad({
+  required NailBedGeometry base,
+  required TrackedHandFrame hand,
+  required NailFingerPlacement placement,
+}) {
+  final tip = hand.landmarks[placement.tip];
+  final dip = hand.landmarks[placement.joint];
+  if (tip == null || dip == null) {
+    return null;
+  }
+
+  final tipZ = hand.landmarkDepth[placement.tip];
+  final dipZ = hand.landmarkDepth[placement.joint];
+  if (tipZ == null || dipZ == null) {
+    return null;
+  }
+
+  final axis = tip - dip;
+  final bedLen = axis.distance;
+  if (bedLen < 6) {
+    return null;
+  }
+
+  final along = axis / bedLen;
+  final perp = Offset(-along.dy, along.dx);
+  final pipZ = hand.landmarkDepth[placement.pip] ?? dipZ;
+
+  // Scale MediaPipe z into screen pixels for this finger size.
+  final zScale = bedLen * 2.4;
+  final pitch = ((tipZ - dipZ) * zScale).clamp(-bedLen * 0.35, bedLen * 0.35);
+  final roll = ((tipZ - pipZ) * zScale * 0.5).clamp(-bedLen * 0.3, bedLen * 0.3);
+
+  final halfW = base.width * 0.5;
+  final halfH = base.height * 0.5;
+  final center = base.center;
+
+  final tipMid = center + along * halfH;
+  final cuticleMid = center - along * halfH;
+  final tipSkew = perp * pitch * 0.28;
+
+  // Finger pointing at camera → nail looks narrower (foreshortening).
+  final foreshorten = (1.0 - pitch.abs() / (bedLen * 2.8)).clamp(0.68, 1.0);
+  final tipHalfW = halfW * foreshorten * 0.92;
+  final baseHalfW = halfW * 0.98;
+
+  final rollAlong = along * roll * 0.14;
+
+  return [
+    tipMid - perp * tipHalfW + tipSkew - rollAlong,
+    tipMid + perp * tipHalfW + tipSkew + rollAlong,
+    cuticleMid + perp * baseHalfW + rollAlong * 0.6,
+    cuticleMid - perp * baseHalfW - rollAlong * 0.6,
+  ];
+}
+
+NailBedGeometry attachPerspectiveQuad({
+  required NailBedGeometry geometry,
+  required TrackedHandFrame hand,
+  required NailFingerPlacement placement,
+}) {
+  final quad = computeNailPerspectiveQuad(
+    base: geometry,
+    hand: hand,
+    placement: placement,
+  );
+  if (quad == null) {
+    return geometry;
+  }
+  return NailBedGeometry(
+    center: geometry.center,
+    width: geometry.width,
+    height: geometry.height,
+    angle: geometry.angle,
+    quad: quad,
   );
 }
 
@@ -87,15 +168,19 @@ NailBedGeometry? computeNailBedGeometry({
   // Nail art tip points along the finger toward the tip landmark.
   final angle = math.atan2(direction.dy, direction.dx) + math.pi / 2 + angleOffset;
 
-  return nudgeCameraNailTowardTip(
-    NailBedGeometry(
-      center: center,
-      width: width,
-      height: height,
-      angle: angle,
+  return attachPerspectiveQuad(
+    geometry: nudgeCameraNailTowardTip(
+      NailBedGeometry(
+        center: center,
+        width: width,
+        height: height,
+        angle: angle,
+      ),
+      along: direction,
+      bedLength: bedLength,
     ),
-    along: direction,
-    bedLength: bedLength,
+    hand: hand,
+    placement: placement,
   );
 }
 

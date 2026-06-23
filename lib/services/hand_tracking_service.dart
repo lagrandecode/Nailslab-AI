@@ -113,6 +113,7 @@ class HandTrackingService {
       final sourceLandmarks = <HandLandmarkType, Offset>{};
       final mapped = <HandLandmarkType, Offset>{};
       final visibility = <HandLandmarkType, double>{};
+      final depth = <HandLandmarkType, double>{};
       for (final landmark in hand.landmarks) {
         if (landmark.visibility < 0.2) {
           continue;
@@ -120,6 +121,7 @@ class HandTrackingService {
         sourceLandmarks[landmark.type] = Offset(landmark.x, landmark.y);
         mapped[landmark.type] = mapper.mapPoint(landmark.x, landmark.y);
         visibility[landmark.type] = landmark.visibility;
+        depth[landmark.type] = landmark.z;
       }
 
       var frame = TrackedHandFrame(
@@ -129,6 +131,7 @@ class HandTrackingService {
         confidence: hand.score,
         sourceLandmarks: sourceLandmarks,
         sourceImageSize: sourceSize,
+        landmarkDepth: depth,
       );
 
       if (countActiveFingers(frame) < 1) {
@@ -156,6 +159,7 @@ class HandTrackingService {
         confidence: frame.confidence,
         sourceLandmarks: frame.sourceLandmarks,
         sourceImageSize: sourceSize,
+        landmarkDepth: frame.landmarkDepth,
         nailGeometry: nailGeometry,
       );
     } catch (error, stack) {

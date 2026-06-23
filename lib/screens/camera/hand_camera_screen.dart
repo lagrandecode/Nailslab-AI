@@ -12,13 +12,16 @@ import '../../core/theme/app_colors.dart';
 import '../../models/nail_finger.dart';
 import '../../models/nail_look.dart';
 import '../../models/plain_nail_paint.dart';
+import '../../screens/camera/capture_fine_tune_screen.dart';
 import '../../services/hand_tracking_service.dart';
 import '../../services/language_service.dart';
 import '../../services/nail_look_image_cache.dart';
 import '../../services/nail_look_repository.dart';
 import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
-import '../../widgets/live_nail_overlay.dart';
+// Cherry art overlay paused — live camera uses AR nail masks instead.
+// import '../../widgets/live_nail_overlay.dart';
+import '../../widgets/live_nail_mask_overlay.dart';
 import '../../widgets/plain_hand_look_view.dart';
 
 enum LookViewMode { plain, camera }
@@ -63,18 +66,17 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
   Future<void> _init() async {
     await _lookRepository.ensureLoaded();
-    final cherry = _lookRepository.byId('cherry');
+    // Cherry auto-select disabled for live camera — AR mask mode uses real nails.
+    // final cherry = _lookRepository.byId('cherry');
+    // if (mounted && cherry != null) {
+    //   setState(() {
+    //     _selectedLook = cherry;
+    //     _plainPaint = _plainPaint.applyLookToAll(cherry);
+    //   });
+    //   await _loadPlainFingerNails(cherry);
+    // }
     if (mounted) {
-      setState(() {
-        _looksLoaded = true;
-        if (cherry != null) {
-          _selectedLook = cherry;
-          _plainPaint = _plainPaint.applyLookToAll(cherry);
-        }
-      });
-      if (cherry != null) {
-        await _loadPlainFingerNails(cherry);
-      }
+      setState(() => _looksLoaded = true);
     }
   }
 
@@ -125,7 +127,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
         _ready = true;
       });
 
-      if (_selectedLook != null && !_isPlain) {
+      if (!_isPlain) {
         await _startTrackingStream();
       }
     } on CameraException catch (e) {
@@ -140,9 +142,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     if (_isPlain) {
       setState(() => _viewMode = LookViewMode.camera);
       await _ensureCameraReady();
-      if (_selectedLook != null) {
-        await _startTrackingStream();
-      }
+      await _startTrackingStream();
     } else {
       await _stopTrackingStream();
       if (mounted) {
@@ -161,8 +161,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     final controller = _controller;
     if (controller == null ||
         !controller.value.isInitialized ||
-        _imageStreamActive ||
-        _selectedLook == null) {
+        _imageStreamActive) {
       return;
     }
 
@@ -193,7 +192,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   }
 
   Future<void> _onCameraFrame(CameraImage image) async {
-    if (_processingFrame || _selectedLook == null || _previewLayoutSize == Size.zero) {
+    if (_processingFrame || _previewLayoutSize == Size.zero) {
       return;
     }
 
@@ -243,7 +242,11 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
   Future<void> _capture() async {
     final controller = _controller;
-    if (controller == null || !controller.value.isInitialized || _capturing) {
+    final look = _selectedLook;
+    if (controller == null ||
+        !controller.value.isInitialized ||
+        _capturing ||
+        look == null) {
       return;
     }
 
@@ -258,15 +261,29 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     try {
       final file = await controller.takePicture();
       final bytes = await file.readAsBytes();
-      if (!mounted) return;
-      Navigator.of(context).pop(Uint8List.fromList(bytes));
+      if (!mounted) {
+        return;
+      }
+
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => CaptureFineTuneScreen(
+            photoBytes: bytes,
+            look: look,
+            brownHand: _brownHand,
+          ),
+        ),
+      );
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _capturing = false;
-        _errorMessage = TryOnStrings.cameraCaptureFailed;
-      });
-      if (wasStreaming && _selectedLook != null) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _errorMessage = TryOnStrings.cameraCaptureFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _capturing = false);
+      }
+      if (wasStreaming && _selectedLook != null && mounted) {
         await _startTrackingStream();
       }
     }
@@ -277,7 +294,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
     if (!_isPlain && tab != CameraPanelTab.looks) {
       _stopTrackingStream();
-    } else if (!_isPlain && tab == CameraPanelTab.looks && _selectedLook != null) {
+    } else if (!_isPlain) {
       _startTrackingStream();
     }
   }
@@ -359,9 +376,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final guideHeight = screenHeight * HandGuideLayout.heightScreenFactor;
-    final trackingActive = _isPlain
-        ? _selectedLook != null
-        : _selectedLook != null && _activeTab == CameraPanelTab.looks;
+    final trackingActive = !_isPlain;
     final handDetected = _trackedHand != null;
 
     return Column(
@@ -462,12 +477,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                       ],
                     ),
                   ),
-                  if (trackingActive && handDetected)
-                    LiveNailOverlay(
-                      look: _selectedLook!,
-                      hand: _trackedHand!,
-                      brownHand: _brownHand,
-                    ),
+                  if (handDetected)
+                    LiveNailMaskOverlay(hand: _trackedHand!),
                   if (_showGuide && !handDetected)
                     Center(
                       child: HandTraceOverlay(

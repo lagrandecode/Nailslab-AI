@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../core/camera/nail_bed_geometry.dart';
+import '../core/camera/nail_warp_painter.dart';
 import '../models/nail_finger.dart';
 import '../models/nail_look.dart';
 import '../services/nail_look_image_cache.dart';
@@ -112,28 +113,7 @@ class _LiveNailPainter extends CustomPainter {
         continue;
       }
 
-      canvas.save();
-      canvas.translate(geometry.center.dx, geometry.center.dy);
-      canvas.rotate(geometry.angle);
-
-      final dstRect = Rect.fromCenter(
-        center: Offset.zero,
-        width: geometry.width,
-        height: geometry.height,
-      );
-
-      final srcRect = Rect.fromLTWH(
-        0,
-        0,
-        nailImage.width.toDouble(),
-        nailImage.height.toDouble(),
-      );
-
-      final paint = Paint()
-        ..filterQuality = FilterQuality.high
-        ..isAntiAlias = true;
-      canvas.drawImageRect(nailImage, srcRect, dstRect, paint);
-      canvas.restore();
+      paintNail(canvas, nailImage, geometry);
     }
   }
 
