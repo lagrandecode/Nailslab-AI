@@ -1,58 +1,39 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../core/camera/nail_bed_geometry.dart';
 import '../core/camera/nail_warp_painter.dart';
 import '../core/camera/thumb_nail_profile.dart';
-import '../core/theme/app_colors.dart';
 import '../models/nail_finger.dart';
-import '../services/thumb_nail_asset_cache.dart';
 
-/// Thumb-only live AR — warps [assets/real.png] onto the detected nail bed.
-class LiveThumbNailOverlay extends StatefulWidget {
+/// Thumb-only live AR — YouCam-style color shader on the detected nail bed.
+class LiveThumbNailOverlay extends StatelessWidget {
   const LiveThumbNailOverlay({
     super.key,
     required this.hand,
+    required this.polishColor,
+    this.finish = NailPolishFinish.cream,
+    this.opacity = 0.76,
   });
 
   final TrackedHandFrame hand;
-
-  @override
-  State<LiveThumbNailOverlay> createState() => _LiveThumbNailOverlayState();
-}
-
-class _LiveThumbNailOverlayState extends State<LiveThumbNailOverlay> {
-  @override
-  void initState() {
-    super.initState();
-    _ensureAssets();
-  }
-
-  Future<void> _ensureAssets() async {
-    await ThumbNailAssetCache.instance.preload();
-    if (mounted) {
-      setState(() {});
-    }
-  }
+  final Color polishColor;
+  final NailPolishFinish finish;
+  final double opacity;
 
   @override
   Widget build(BuildContext context) {
-    if (!isThumbVisibleForAr(widget.hand)) {
+    if (!isThumbVisibleForAr(hand)) {
       return const SizedBox.shrink();
     }
-
-    final cache = ThumbNailAssetCache.instance;
-    final texture = cache.texture;
-    final mask = cache.mask;
 
     return IgnorePointer(
       child: SizedBox.expand(
         child: CustomPaint(
           painter: _LiveThumbNailPainter(
-            hand: widget.hand,
-            texture: texture,
-            mask: mask,
+            hand: hand,
+            polishColor: polishColor,
+            finish: finish,
+            opacity: opacity,
           ),
         ),
       ),
@@ -63,17 +44,18 @@ class _LiveThumbNailOverlayState extends State<LiveThumbNailOverlay> {
 class _LiveThumbNailPainter extends CustomPainter {
   _LiveThumbNailPainter({
     required this.hand,
-    required this.texture,
-    required this.mask,
+    required this.polishColor,
+    required this.finish,
+    required this.opacity,
   });
 
   final TrackedHandFrame hand;
-  final ui.Image? texture;
-  final ui.Image? mask;
+  final Color polishColor;
+  final NailPolishFinish finish;
+  final double opacity;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Recompute every frame from raw landmarks so the nail sticks to the thumb.
     final geometry = computeThumbNailBedGeometry(
           hand: hand,
           scale: 1.0,
@@ -84,34 +66,20 @@ class _LiveThumbNailPainter extends CustomPainter {
       return;
     }
 
-    if (texture != null) {
-      paintThumbNailTexture(canvas, texture!, geometry);
-      return;
-    }
-
-    if (mask != null) {
-      paintThumbPolish(
-        canvas,
-        geometry,
-        maskImage: mask,
-        color: AppColors.primary,
-        opacity: 0.82,
-      );
-      return;
-    }
-
-    paintNailMask(
+    paintNailColorShader(
       canvas,
-      flatGeometryFromPerspective(geometry),
-      color: AppColors.primary,
-      opacity: 0.65,
+      geometry,
+      color: polishColor,
+      opacity: opacity,
+      finish: finish,
     );
   }
 
   @override
   bool shouldRepaint(covariant _LiveThumbNailPainter oldDelegate) {
     return oldDelegate.hand != hand ||
-        oldDelegate.texture != texture ||
-        oldDelegate.mask != mask;
+        oldDelegate.polishColor != polishColor ||
+        oldDelegate.finish != finish ||
+        oldDelegate.opacity != opacity;
   }
 }

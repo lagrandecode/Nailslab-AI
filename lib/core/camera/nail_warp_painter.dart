@@ -328,6 +328,136 @@ void paintThumbPolishFlat(
   canvas.restore();
 }
 
+/// YouCam-style live polish — tints the detected nail bed (no PNG texture).
+enum NailPolishFinish { cream, metallic, matte, jelly, sheer }
+
+void paintNailColorShader(
+  Canvas canvas,
+  NailBedGeometry geometry, {
+  required Color color,
+  double opacity = 0.74,
+  NailPolishFinish finish = NailPolishFinish.cream,
+}) {
+  final quad = geometry.quad;
+  if (quad != null && quad.length == 4 && isValidNailQuad(quad)) {
+    paintNailColorShaderOnQuad(
+      canvas,
+      quad,
+      color: color,
+      opacity: opacity,
+      finish: finish,
+    );
+    return;
+  }
+  paintNailColorShaderFlat(
+    canvas,
+    geometry,
+    color: color,
+    opacity: opacity,
+    finish: finish,
+  );
+}
+
+void paintNailColorShaderOnQuad(
+  Canvas canvas,
+  List<Offset> quad, {
+  required Color color,
+  double opacity = 0.74,
+  NailPolishFinish finish = NailPolishFinish.cream,
+}) {
+  if (quad.length != 4 || !isValidNailQuad(quad)) {
+    return;
+  }
+
+  final path = nailQuadPath(quad);
+  final (blend, alpha, gloss) = _finishStyle(finish, opacity);
+
+  canvas.drawPath(
+    path,
+    Paint()
+      ..color = color.withValues(alpha: alpha)
+      ..blendMode = blend
+      ..isAntiAlias = true,
+  );
+
+  if (gloss > 0) {
+    final glossPath = Path()
+      ..moveTo(quad[0].dx, quad[0].dy)
+      ..lineTo(quad[1].dx, quad[1].dy)
+      ..lineTo(
+        quad[1].dx + (quad[2].dx - quad[1].dx) * 0.38,
+        quad[1].dy + (quad[2].dy - quad[1].dy) * 0.38,
+      )
+      ..lineTo(
+        quad[0].dx + (quad[3].dx - quad[0].dx) * 0.38,
+        quad[0].dy + (quad[3].dy - quad[0].dy) * 0.38,
+      )
+      ..close();
+    canvas.drawPath(
+      glossPath,
+      Paint()
+        ..color = Colors.white.withValues(alpha: gloss)
+        ..blendMode = BlendMode.softLight
+        ..isAntiAlias = true,
+    );
+  }
+}
+
+void paintNailColorShaderFlat(
+  Canvas canvas,
+  NailBedGeometry geometry, {
+  required Color color,
+  double opacity = 0.74,
+  NailPolishFinish finish = NailPolishFinish.cream,
+}) {
+  canvas.save();
+  canvas.translate(geometry.center.dx, geometry.center.dy);
+  canvas.rotate(geometry.angle);
+
+  final clipPath = buildNailClipPath(geometry.width, geometry.height);
+  final (blend, alpha, gloss) = _finishStyle(finish, opacity);
+
+  canvas.drawPath(
+    clipPath,
+    Paint()
+      ..color = color.withValues(alpha: alpha)
+      ..blendMode = blend
+      ..isAntiAlias = true,
+  );
+
+  if (gloss > 0) {
+    canvas.clipPath(clipPath);
+    canvas.drawPath(
+      Path()
+        ..addOval(
+          Rect.fromCenter(
+            center: Offset(0, -geometry.height * 0.14),
+            width: geometry.width * 0.34,
+            height: geometry.height * 0.42,
+          ),
+        ),
+      Paint()
+        ..color = Colors.white.withValues(alpha: gloss)
+        ..blendMode = BlendMode.softLight
+        ..isAntiAlias = true,
+    );
+  }
+  canvas.restore();
+}
+
+(BlendMode blend, double alpha, double gloss) _finishStyle(
+  NailPolishFinish finish,
+  double opacity,
+) {
+  return switch (finish) {
+    NailPolishFinish.cream => (BlendMode.hardLight, opacity, 0.20),
+    NailPolishFinish.metallic => (BlendMode.overlay, opacity * 0.92, 0.32),
+    NailPolishFinish.matte => (BlendMode.color, opacity * 0.78, 0.0),
+    NailPolishFinish.jelly => (BlendMode.softLight, opacity * 0.62, 0.14),
+    NailPolishFinish.sheer => (BlendMode.color, opacity * 0.42, 0.08),
+  };
+}
+
 /// Semi-transparent polish overlay on the detected nail bed (live AR mask).
 void paintNailMask(
   Canvas canvas,

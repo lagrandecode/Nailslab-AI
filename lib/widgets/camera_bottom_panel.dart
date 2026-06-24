@@ -30,6 +30,7 @@ class CameraBottomPanel extends StatelessWidget {
     this.selectedFingerLabel,
     this.onColorSelected,
     this.onClearColor,
+    this.selectedColor,
   });
 
   final CameraPanelTab activeTab;
@@ -41,6 +42,7 @@ class CameraBottomPanel extends StatelessWidget {
   final String? selectedFingerLabel;
   final ValueChanged<Color>? onColorSelected;
   final VoidCallback? onClearColor;
+  final Color? selectedColor;
 
   @override
   Widget build(BuildContext context) {
@@ -71,12 +73,12 @@ class CameraBottomPanel extends StatelessWidget {
                 },
               ),
             )
-          else if (activeTab == CameraPanelTab.color && plainMode)
+          else if (activeTab == CameraPanelTab.color)
             SizedBox(
               height: 88,
               child: Column(
                 children: [
-                  if (selectedFingerLabel != null)
+                  if (plainMode && selectedFingerLabel != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: Text(
@@ -105,6 +107,7 @@ class CameraBottomPanel extends StatelessWidget {
                         final color = plainNailColors[index - 1];
                         return _ColorSwatch(
                           color: color,
+                          selected: !plainMode && color == selectedColor,
                           onTap: () {
                             AppHaptics.heavy();
                             onColorSelected?.call(color);
@@ -168,11 +171,13 @@ class _ColorSwatch extends StatelessWidget {
     required this.color,
     this.isClear = false,
     this.onTap,
+    this.selected = false,
   });
 
   final Color color;
   final bool isClear;
   final VoidCallback? onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -185,8 +190,10 @@ class _ColorSwatch extends StatelessWidget {
           shape: BoxShape.circle,
           color: isClear ? Colors.white : color,
           border: Border.all(
-            color: AppColors.title.withValues(alpha: isClear ? 0.25 : 0.12),
-            width: isClear ? 1.5 : 1,
+            color: selected
+                ? AppColors.primary
+                : AppColors.title.withValues(alpha: isClear ? 0.25 : 0.12),
+            width: selected ? 2.5 : (isClear ? 1.5 : 1),
           ),
         ),
         child: isClear

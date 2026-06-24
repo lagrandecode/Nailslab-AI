@@ -20,11 +20,8 @@ import '../../services/nail_look_image_cache.dart';
 import '../../services/nail_look_repository.dart';
 import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
-// Cherry art overlay paused — live camera uses thumb-only AR nail filter.
-// import '../../widgets/live_nail_overlay.dart';
 import '../../widgets/live_thumb_nail_overlay.dart';
 import '../../core/camera/thumb_nail_profile.dart';
-import '../../services/thumb_nail_asset_cache.dart';
 import '../../widgets/plain_hand_look_view.dart';
 
 enum LookViewMode { plain, camera }
@@ -54,6 +51,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   CameraPanelTab _activeTab = CameraPanelTab.looks;
   LookViewMode _viewMode = LookViewMode.plain;
   NailLook? _selectedLook;
+  Color _thumbPolishColor = plainNailColors.first;
   TrackedHandFrame? _trackedHand;
   Size _previewLayoutSize = Size.zero;
   PlainNailPaintState _plainPaint = const PlainNailPaintState();
@@ -96,7 +94,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     }
     _cameraInitStarted = true;
     await _handTracking.ensureInitialized();
-    await ThumbNailAssetCache.instance.preload();
     await _initCamera();
   }
 
@@ -132,7 +129,6 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       });
 
       if (!_isPlain) {
-        await ThumbNailAssetCache.instance.preload();
         await _startTrackingStream();
       }
     } on CameraException catch (e) {
@@ -316,19 +312,27 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
 
   void _onNailColorSelected(Color color) {
     setState(() {
-      _plainPaint = _plainPaint.applyTint(
-        color,
-        finger: _plainPaint.selectedFinger,
-      );
+      if (_isPlain) {
+        _plainPaint = _plainPaint.applyTint(
+          color,
+          finger: _plainPaint.selectedFinger,
+        );
+      } else {
+        _thumbPolishColor = color;
+      }
     });
   }
 
   void _onClearNailColor() {
     setState(() {
-      _plainPaint = _plainPaint.applyTint(
-        null,
-        finger: _plainPaint.selectedFinger,
-      );
+      if (_isPlain) {
+        _plainPaint = _plainPaint.applyTint(
+          null,
+          finger: _plainPaint.selectedFinger,
+        );
+      } else {
+        _thumbPolishColor = plainNailColors.first;
+      }
     });
   }
 
@@ -485,7 +489,10 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                     ),
                   ),
                   if (handDetected)
-                    LiveThumbNailOverlay(hand: _trackedHand!),
+                    LiveThumbNailOverlay(
+                      hand: _trackedHand!,
+                      polishColor: _thumbPolishColor,
+                    ),
                   if (_showGuide && !handDetected)
                     Center(
                       child: HandTraceOverlay(
@@ -532,8 +539,9 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
             onLookSelected: _onLookSelected,
             plainMode: _isPlain,
             selectedFingerLabel: _isPlain ? _plainSelectedFingerLabel() : null,
-            onColorSelected: _isPlain ? _onNailColorSelected : null,
-            onClearColor: _isPlain ? _onClearNailColor : null,
+            onColorSelected: _onNailColorSelected,
+            onClearColor: _onClearNailColor,
+            selectedColor: _isPlain ? null : _thumbPolishColor,
           )
         else
           const SizedBox(
