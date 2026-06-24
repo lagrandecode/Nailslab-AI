@@ -49,3 +49,8 @@ app.*.map.json
 
 # Secrets — never commit
 .env
+
+# Local ML tooling
+tool/.venv/
+tool/models/
+tool/output/

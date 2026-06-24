@@ -65,6 +65,7 @@ class HandTrackingService {
     required Size screenSize,
     Map<NailFinger, CameraNailMetrics?> metricsByFinger = const {},
     double overlayScale = 1.0,
+    bool thumbOnly = false,
   }) async {
     final detector = _detector;
     if (detector == null || _detecting) {
@@ -134,7 +135,11 @@ class HandTrackingService {
         landmarkDepth: depth,
       );
 
-      if (countActiveFingers(frame) < 1) {
+      if (thumbOnly) {
+        if (!isThumbVisibleForAr(frame)) {
+          return null;
+        }
+      } else if (countActiveFingers(frame) < 1) {
         return null;
       }
 
@@ -150,6 +155,7 @@ class HandTrackingService {
         maxDim: maxDim,
         overlayScale: overlayScale,
         metricsByFinger: metricsByFinger,
+        thumbOnly: thumbOnly,
       );
 
       return TrackedHandFrame(

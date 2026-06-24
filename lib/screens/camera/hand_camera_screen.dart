@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
@@ -19,9 +20,11 @@ import '../../services/nail_look_image_cache.dart';
 import '../../services/nail_look_repository.dart';
 import '../../widgets/camera_bottom_panel.dart';
 import '../../widgets/hand_trace_overlay.dart';
-// Cherry art overlay paused — live camera uses AR nail masks instead.
+// Cherry art overlay paused — live camera uses thumb-only AR nail filter.
 // import '../../widgets/live_nail_overlay.dart';
-import '../../widgets/live_nail_mask_overlay.dart';
+import '../../widgets/live_thumb_nail_overlay.dart';
+import '../../core/camera/thumb_nail_profile.dart';
+import '../../services/thumb_nail_asset_cache.dart';
 import '../../widgets/plain_hand_look_view.dart';
 
 enum LookViewMode { plain, camera }
@@ -93,6 +96,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
     }
     _cameraInitStarted = true;
     await _handTracking.ensureInitialized();
+    await ThumbNailAssetCache.instance.preload();
     await _initCamera();
   }
 
@@ -128,6 +132,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
       });
 
       if (!_isPlain) {
+        await ThumbNailAssetCache.instance.preload();
         await _startTrackingStream();
       }
     } on CameraException catch (e) {
@@ -207,7 +212,10 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
         image: image,
         controller: controller,
         screenSize: _previewLayoutSize,
-        metricsByFinger: _selectedLook?.cameraNailMetrics ?? const {},
+        metricsByFinger: const {
+          NailFinger.thumb: ThumbNailProfile.metrics,
+        },
+        thumbOnly: true,
       );
 
       if (!mounted) {
@@ -292,9 +300,8 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
   void _onTabChanged(CameraPanelTab tab) {
     setState(() => _activeTab = tab);
 
-    if (!_isPlain && tab != CameraPanelTab.looks) {
-      _stopTrackingStream();
-    } else if (!_isPlain) {
+    // Keep thumb tracking alive in camera mode regardless of bottom tab.
+    if (!_isPlain && !_imageStreamActive) {
       _startTrackingStream();
     }
   }
@@ -478,7 +485,7 @@ class _HandCameraScreenState extends State<HandCameraScreen> {
                     ),
                   ),
                   if (handDetected)
-                    LiveNailMaskOverlay(hand: _trackedHand!),
+                    LiveThumbNailOverlay(hand: _trackedHand!),
                   if (_showGuide && !handDetected)
                     Center(
                       child: HandTraceOverlay(

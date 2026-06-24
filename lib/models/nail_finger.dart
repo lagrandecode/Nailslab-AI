@@ -187,6 +187,33 @@ bool isFingerActiveForPaint(
   return extensionRatio >= minRatio;
 }
 
+/// Looser gate for thumb-only AR — visible nail bed without a full spread hand.
+bool isThumbVisibleForAr(TrackedHandFrame hand) {
+  const placement = NailFingerPlacement(
+    finger: NailFinger.thumb,
+    tip: HandLandmarkType.thumbTip,
+    joint: HandLandmarkType.thumbIP,
+    pip: HandLandmarkType.thumbMCP,
+    mcp: HandLandmarkType.thumbCMC,
+    minExtensionRatio: 1.02,
+  );
+
+  final tip = hand.landmarks[placement.tip];
+  final joint = hand.landmarks[placement.joint];
+  if (tip == null || joint == null) {
+    return false;
+  }
+
+  if ((hand.visibility[placement.tip] ?? 0) < 0.25) {
+    return false;
+  }
+  if ((hand.visibility[placement.joint] ?? 0) < 0.15) {
+    return false;
+  }
+
+  return (tip - joint).distance >= 4;
+}
+
 int countActiveFingers(TrackedHandFrame hand) {
   var count = 0;
   for (final placement in NailFingerPlacement.all) {

@@ -97,6 +97,8 @@ flutter:
     - assets/data/nail_styles.json
     - assets/data/nail_looks.json
     - assets/looks/
+    - assets/looks/reference/thumb_nail_mask.png
+    - assets/looks/reference/thumb_nail_extracted.png
     - assets/2xJa86J01.svg
     - assets/logo1.jpg
     - assets/videos/onboard1.mp4
@@ -104,6 +106,8 @@ flutter:
     - assets/handlight.png
     - assets/handbrown2.png
     - assets/cherry2.png
+    - assets/thumb3.png
+    - assets/real.png
     - assets/nails/
 
   # An image asset can refer to one or more resolution-specific "variants", see
