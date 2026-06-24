@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/nail_bed_geometry.dart';
 import 'nail_bed_geometry.dart' show buildNailClipPath, flatGeometryFromPerspective, isValidNailQuad, nailQuadPath;
 
-/// Paints a nail image warped to a 4-corner quad (3D perspective on the finger).
+/// Warps nail texture to the 4-corner quad (perspective — shape follows hand rotation).
 void paintNailOnQuad(
   Canvas canvas,
   ui.Image image,
@@ -15,40 +15,101 @@ void paintNailOnQuad(
     return;
   }
 
-  final vertices = ui.Vertices(
-    ui.VertexMode.triangles,
-    [
-      quad[0],
-      quad[1],
-      quad[2],
-      quad[0],
-      quad[2],
-      quad[3],
-    ],
-    textureCoordinates: const [
-      Offset(0, 0),
-      Offset(1, 0),
-      Offset(1, 1),
-      Offset(0, 0),
-      Offset(1, 1),
-      Offset(0, 1),
-    ],
-  );
+  final iw = image.width.toDouble();
+  final ih = image.height.toDouble();
 
-  // Normalized UVs (0–1); identity matrix maps to full image per Flutter docs.
   canvas.drawVertices(
-    vertices,
+    ui.Vertices(
+      ui.VertexMode.triangles,
+      [
+        quad[0],
+        quad[1],
+        quad[2],
+        quad[0],
+        quad[2],
+        quad[3],
+      ],
+      textureCoordinates: [
+        const Offset(0, 0),
+        Offset(iw, 0),
+        Offset(iw, ih),
+        const Offset(0, 0),
+        Offset(iw, ih),
+        Offset(0, ih),
+      ],
+    ),
     BlendMode.srcOver,
     Paint()
       ..shader = ui.ImageShader(
         image,
         TileMode.clamp,
         TileMode.clamp,
-        Matrix4.identity().storage,
+        Matrix4.diagonal3Values(1 / iw, 1 / ih, 1).storage,
       )
-      ..filterQuality = FilterQuality.high
+      ..filterQuality = FilterQuality.medium
       ..isAntiAlias = true,
   );
+}
+
+/// Subdivided quad warp — smoother perspective on devices where a single quad is weak.
+void paintNailOnQuadMesh(
+  Canvas canvas,
+  ui.Image image,
+  List<Offset> quad, {
+  int subdivisions = 3,
+}) {
+  if (quad.length != 4 || !isValidNailQuad(quad)) {
+    return;
+  }
+
+  final iw = image.width.toDouble();
+  final ih = image.height.toDouble();
+  final shader = ui.ImageShader(
+    image,
+    TileMode.clamp,
+    TileMode.clamp,
+    Matrix4.diagonal3Values(1 / iw, 1 / ih, 1).storage,
+  );
+  final paint = Paint()
+    ..shader = shader
+    ..filterQuality = FilterQuality.medium
+    ..isAntiAlias = true;
+
+  Offset bilinear(double u, double v) {
+    final top = Offset.lerp(quad[0], quad[1], u)!;
+    final bottom = Offset.lerp(quad[3], quad[2], u)!;
+    return Offset.lerp(top, bottom, v)!;
+  }
+
+  final n = subdivisions;
+  for (var row = 0; row < n; row++) {
+    final v0 = row / n;
+    final v1 = (row + 1) / n;
+    for (var col = 0; col < n; col++) {
+      final u0 = col / n;
+      final u1 = (col + 1) / n;
+
+      final p00 = bilinear(u0, v0);
+      final p10 = bilinear(u1, v0);
+      final p11 = bilinear(u1, v1);
+      final p01 = bilinear(u0, v1);
+
+      final t00 = Offset(u0 * iw, v0 * ih);
+      final t10 = Offset(u1 * iw, v0 * ih);
+      final t11 = Offset(u1 * iw, v1 * ih);
+      final t01 = Offset(u0 * iw, v1 * ih);
+
+      canvas.drawVertices(
+        ui.Vertices(
+          ui.VertexMode.triangles,
+          [p00, p10, p11, p00, p11, p01],
+          textureCoordinates: [t00, t10, t11, t00, t11, t01],
+        ),
+        BlendMode.srcOver,
+        paint,
+      );
+    }
+  }
 }
 
 /// Paints using a flat rotated rect (fallback when no quad).
@@ -92,19 +153,20 @@ void paintNail(
   paintNailReliable(canvas, image, geometry);
 }
 
-/// Clips to the perspective quad when available, then paints with drawImageRect.
+/// Perspective mesh warp; flat clip underneath so the nail stays visible on all devices.
 void paintNailReliable(
   Canvas canvas,
   ui.Image image,
   NailBedGeometry geometry,
 ) {
   final flat = flatGeometryFromPerspective(geometry);
-  final quad = flat.quad;
+  final quad = geometry.quad;
   if (quad != null && isValidNailQuad(quad)) {
     canvas.save();
     canvas.clipPath(nailQuadPath(quad));
     paintNailFlat(canvas, image, flat);
     canvas.restore();
+    paintNailOnQuadMesh(canvas, image, quad);
     return;
   }
   paintNailFlat(canvas, image, flat);

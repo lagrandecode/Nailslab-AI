@@ -28,7 +28,7 @@ NailBedGeometry nudgeCameraNailTowardTip(
   );
 }
 
-/// Builds a perspective quad from landmarks + depth so the nail tilts with the hand.
+/// Builds a perspective quad locked to landmarks — shape changes when the hand rotates.
 List<Offset>? computeNailPerspectiveQuad({
   required NailBedGeometry base,
   required TrackedHandFrame hand,
@@ -40,82 +40,78 @@ List<Offset>? computeNailPerspectiveQuad({
     return null;
   }
 
-  final tipZ = hand.landmarkDepth[placement.tip] ?? 0;
-  final jointZ = hand.landmarkDepth[placement.joint] ?? 0;
-
   final axis = tip - joint;
   final bedLen = axis.distance;
-  if (bedLen < 6) {
+  if (bedLen < 4) {
     return null;
   }
 
   var along = axis / bedLen;
   var perp = Offset(-along.dy, along.dx);
+  final halfW = base.width * 0.5;
 
   final pip = hand.landmarks[placement.pip];
   final mcp = hand.landmarks[placement.mcp];
+  final indexMcp = hand.landmarks[HandLandmarkType.indexFingerMCP];
+
+  // 2D palm angle — thumb vs index knuckle shifts when the hand rotates.
+  var lateralAsym = 0.0;
+  if (pip != null && indexMcp != null) {
+    final palm = indexMcp - pip;
+    if (palm.distance > 5) {
+      final palmN = palm / palm.distance;
+      lateralAsym = (perp.dx * palmN.dx + perp.dy * palmN.dy).clamp(-1.0, 1.0);
+      along = Offset.lerp(along, palmN, lateralAsym.abs() * 0.12)!;
+      along = along / along.distance;
+      perp = Offset(-along.dy, along.dx);
+    }
+  }
+
   if (pip != null && mcp != null) {
-    final knuckle = pip - mcp;
-    if (knuckle.distance > 5) {
-      final knucklePerp = Offset(-knuckle.dy, knuckle.dx) / knuckle.distance;
-      perp = Offset.lerp(perp, knucklePerp, 0.38)!;
+    final prox = pip - mcp;
+    if (prox.distance > 4) {
+      final proxN = prox / prox.distance;
+      final roll2d = proxN.dx * along.dy - proxN.dy * along.dx;
+      perp = Offset.lerp(perp, Offset(-proxN.dy, proxN.dx), roll2d.abs() * 0.28)!;
       perp = perp / perp.distance;
     }
   }
 
-  if (placement.finger == NailFinger.thumb) {
-    final indexMcp = hand.landmarks[HandLandmarkType.indexFingerMCP];
-    if (indexMcp != null && pip != null) {
-      final palm = indexMcp - pip;
-      if (palm.distance > 6) {
-        final palmPerp = Offset(-palm.dy, palm.dx) / palm.distance;
-        along = Offset.lerp(along, palmPerp, 0.18)!;
-        along = along / along.distance;
-        perp = Offset(-along.dy, along.dx);
-      }
-    }
-  }
-
+  final tipZ = hand.landmarkDepth[placement.tip] ?? 0;
+  final jointZ = hand.landmarkDepth[placement.joint] ?? 0;
   final pipZ = hand.landmarkDepth[placement.pip] ?? jointZ;
-  final mcpZ = hand.landmarkDepth[placement.mcp] ?? pipZ;
+  final indexMcpZ = hand.landmarkDepth[HandLandmarkType.indexFingerMCP] ?? pipZ;
 
-  // MediaPipe z → screen skew (stronger = more YouCam-like tilt follow).
-  final zScale = bedLen * 3.6;
-  final pitch = ((tipZ - jointZ) * zScale).clamp(-bedLen * 0.55, bedLen * 0.55);
-  final roll = ((jointZ - pipZ) * zScale * 0.65).clamp(-bedLen * 0.45, bedLen * 0.45);
-  var yaw = ((pipZ - mcpZ) * zScale * 0.45).clamp(-bedLen * 0.35, bedLen * 0.35);
+  final zScale = bedLen * 3.4;
+  // Pitch: finger toward/away from camera (face-on vs pointing at you).
+  final pitch = ((tipZ - jointZ) * zScale).clamp(-halfW, halfW);
+  // Roll: twist around the finger — one nail edge closer than the other.
+  final roll = ((jointZ - pipZ) * zScale * 0.58).clamp(-halfW * 0.85, halfW * 0.85);
+  // Yaw: whole hand turned left/right.
+  final yaw = ((tipZ - indexMcpZ) * zScale * 0.48).clamp(-halfW * 0.75, halfW * 0.75);
 
-  if (placement.finger == NailFinger.thumb) {
-    final indexMcpZ = hand.landmarkDepth[HandLandmarkType.indexFingerMCP];
-    if (indexMcpZ != null) {
-      yaw += ((tipZ - indexMcpZ) * zScale * 0.28).clamp(-bedLen * 0.25, bedLen * 0.25);
-    }
-  }
+  final cuticle = joint + along * (bedLen * 0.10);
+  final nailTip = joint + along * (bedLen * 0.96);
 
-  final halfW = base.width * 0.5;
+  final pitchNorm = pitch / halfW;
+  final tipW = halfW * (1.0 - pitchNorm.abs() * 0.52).clamp(0.28, 1.0);
+  final baseW = halfW * 1.02;
 
-  // Anchor quad to joint→tip axis (not just center rect).
-  final cuticleMid = joint + along * (bedLen * 0.14);
-  final tipMid = joint + along * (bedLen * 0.94);
-  final centerShift = base.center - (cuticleMid + tipMid) * 0.5;
-  final cuticle = cuticleMid + centerShift;
-  final tipLine = tipMid + centerShift;
-
-  // Finger toward camera → nail foreshortens at the tip.
-  final foreshorten = (1.0 - pitch.abs() / (bedLen * 2.2)).clamp(0.48, 1.0);
-  final tipHalfW = halfW * foreshorten * 0.90;
-  final baseHalfW = halfW * 1.02;
+  // Asymmetric width when hand rotates — like a face narrowing in profile.
+  final rollSide = roll / halfW;
+  final yawSide = yaw / halfW;
+  final latSide = lateralAsym * 0.32;
+  var leftScale = (1.0 + rollSide * 0.38 + yawSide * 0.28 + latSide).clamp(0.32, 1.45);
+  var rightScale = (1.0 - rollSide * 0.38 - yawSide * 0.28 - latSide).clamp(0.32, 1.45);
 
   final pitchSkew = perp * pitch * 0.52;
-  final rollAlong = along * roll * 0.22;
-  final yawAlong = along * yaw * 0.18;
-  final rollPerp = perp * roll * 0.16;
+  final yawAlong = along * yaw * 0.16;
 
   return [
-    tipLine - perp * tipHalfW + pitchSkew - rollAlong + yawAlong - rollPerp,
-    tipLine + perp * tipHalfW + pitchSkew + rollAlong + yawAlong + rollPerp,
-    cuticle + perp * baseHalfW + rollAlong * 0.55 + yawAlong * 0.4,
-    cuticle - perp * baseHalfW - rollAlong * 0.55 - yawAlong * 0.4,
+    nailTip - perp * tipW * leftScale + pitchSkew + yawAlong,
+    nailTip + perp * tipW * rightScale + pitchSkew + yawAlong,
+    cuticle + perp * baseW * rightScale * 0.96 + yawAlong * 0.42,
+    cuticle - perp * baseW * leftScale * 0.96 - yawAlong * 0.42,
   ];
 }
 
@@ -183,15 +179,11 @@ NailBedGeometry? computeThumbNailBedGeometry({
       math.atan2(direction.dy, direction.dx) + math.pi / 2 + m.angleOffset;
 
   return attachPerspectiveQuad(
-    geometry: nudgeCameraNailTowardTip(
-      NailBedGeometry(
-        center: center,
-        width: width,
-        height: height,
-        angle: angle,
-      ),
-      along: direction,
-      bedLength: bedLength,
+    geometry: NailBedGeometry(
+      center: center,
+      width: width,
+      height: height,
+      angle: angle,
     ),
     hand: hand,
     placement: placement,

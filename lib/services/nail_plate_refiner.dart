@@ -30,9 +30,9 @@ class NailPlateRefiner {
     bool thumbOnly = false,
   }) {
     _frame++;
-    final useLuma = thumbOnly || _frame.isEven;
-    final smoothAlpha = thumbOnly ? 0.58 : _smoothAlpha;
-    final lumaBlend = thumbOnly ? 0.74 : 0.62;
+    final useLuma = !thumbOnly && _frame.isEven;
+    final smoothAlpha = thumbOnly ? 0.90 : _smoothAlpha;
+    final lumaBlend = thumbOnly ? 0.0 : 0.62;
 
     CameraLumaSampler? sampler;
     if (useLuma) {
@@ -81,7 +81,7 @@ class NailPlateRefiner {
       }
 
       NailBedGeometry geometry = landmarkGeom;
-      if (sampler != null) {
+      if (sampler != null && lumaBlend > 0) {
         try {
           final lumaGeom = _geometryFromLuma(
             placement: placement,
@@ -100,23 +100,16 @@ class NailPlateRefiner {
         }
       }
 
-      final tip = hand.landmarks[placement.tip]!;
-      final dip = hand.landmarks[placement.joint]!;
-      final bedAxis = tip - dip;
-      final bedLength = bedAxis.distance;
-      if (bedLength >= 1) {
-        geometry = nudgeCameraNailTowardTip(
-          geometry,
-          along: bedAxis / bedLength,
-          bedLength: bedLength,
-        );
-      }
-
       geometry = attachPerspectiveQuad(
         geometry: geometry,
         hand: hand,
         placement: placement,
       );
+
+      if (thumbOnly) {
+        refined[placement.finger] = geometry;
+        continue;
+      }
 
       refined[placement.finger] = _smoothFinger(
         placement.finger,

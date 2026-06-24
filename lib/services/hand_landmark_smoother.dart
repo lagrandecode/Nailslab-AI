@@ -9,9 +9,9 @@ class HandLandmarkSmoother {
   TrackedHandFrame? _previous;
 
   static const double _alpha = 0.50;
-  static const double _depthAlpha = 0.38;
 
-  TrackedHandFrame smooth(TrackedHandFrame current) {
+  TrackedHandFrame smooth(TrackedHandFrame current, {double? alpha}) {
+    final blend = alpha ?? _alpha;
     final previous = _previous;
     if (previous == null) {
       _previous = current;
@@ -23,7 +23,7 @@ class HandLandmarkSmoother {
       final prior = previous.landmarks[entry.key];
       smoothed[entry.key] = prior == null
           ? entry.value
-          : Offset.lerp(prior, entry.value, _alpha)!;
+          : Offset.lerp(prior, entry.value, blend)!;
     }
 
     final sourceSmoothed = <HandLandmarkType, Offset>{};
@@ -31,7 +31,7 @@ class HandLandmarkSmoother {
       final prior = previous.sourceLandmarks[entry.key];
       sourceSmoothed[entry.key] = prior == null
           ? entry.value
-          : Offset.lerp(prior, entry.value, _alpha)!;
+          : Offset.lerp(prior, entry.value, blend)!;
     }
 
     final depthSmoothed = <HandLandmarkType, double>{};
@@ -39,7 +39,7 @@ class HandLandmarkSmoother {
       final prior = previous.landmarkDepth[entry.key];
       depthSmoothed[entry.key] = prior == null
           ? entry.value
-          : prior + (entry.value - prior) * _depthAlpha;
+          : prior + (entry.value - prior) * blend;
     }
 
     final frame = TrackedHandFrame(

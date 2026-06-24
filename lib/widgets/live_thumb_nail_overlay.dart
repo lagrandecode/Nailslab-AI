@@ -73,12 +73,13 @@ class _LiveThumbNailPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final geometry = hand.nailGeometry[NailFinger.thumb] ??
-        computeThumbNailBedGeometry(
+    // Recompute every frame from raw landmarks so the nail sticks to the thumb.
+    final geometry = computeThumbNailBedGeometry(
           hand: hand,
           scale: 1.0,
           metrics: ThumbNailProfile.metrics,
-        );
+        ) ??
+        hand.nailGeometry[NailFinger.thumb];
     if (geometry == null) {
       return;
     }

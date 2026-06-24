@@ -143,7 +143,7 @@ class HandTrackingService {
         return null;
       }
 
-      frame = _smoother.smooth(frame);
+      frame = _smoother.smooth(frame, alpha: thumbOnly ? 0.84 : 0.50);
 
       final nailGeometry = _nailRefiner.refine(
         hand: frame,
