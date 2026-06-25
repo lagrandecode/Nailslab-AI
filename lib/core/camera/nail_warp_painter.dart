@@ -57,6 +57,7 @@ void paintNailOnQuadMesh(
   ui.Image image,
   List<Offset> quad, {
   int subdivisions = 3,
+  Rect? textureRect,
 }) {
   if (quad.length != 4 || !isValidNailQuad(quad)) {
     return;
@@ -64,6 +65,7 @@ void paintNailOnQuadMesh(
 
   final iw = image.width.toDouble();
   final ih = image.height.toDouble();
+  final src = textureRect ?? Rect.fromLTWH(0, 0, iw, ih);
   final shader = ui.ImageShader(
     image,
     TileMode.clamp,
@@ -72,8 +74,12 @@ void paintNailOnQuadMesh(
   );
   final paint = Paint()
     ..shader = shader
-    ..filterQuality = FilterQuality.medium
+    ..filterQuality = FilterQuality.high
     ..isAntiAlias = true;
+
+  Offset texCoord(double u, double v) {
+    return Offset(src.left + u * src.width, src.top + v * src.height);
+  }
 
   Offset bilinear(double u, double v) {
     final top = Offset.lerp(quad[0], quad[1], u)!;
@@ -94,10 +100,10 @@ void paintNailOnQuadMesh(
       final p11 = bilinear(u1, v1);
       final p01 = bilinear(u0, v1);
 
-      final t00 = Offset(u0 * iw, v0 * ih);
-      final t10 = Offset(u1 * iw, v0 * ih);
-      final t11 = Offset(u1 * iw, v1 * ih);
-      final t01 = Offset(u0 * iw, v1 * ih);
+      final t00 = texCoord(u0, v0);
+      final t10 = texCoord(u1, v0);
+      final t11 = texCoord(u1, v1);
+      final t01 = texCoord(u0, v1);
 
       canvas.drawVertices(
         ui.Vertices(
@@ -116,8 +122,9 @@ void paintNailOnQuadMesh(
 void paintNailFlat(
   Canvas canvas,
   ui.Image image,
-  NailBedGeometry geometry,
-) {
+  NailBedGeometry geometry, {
+  Rect? textureRect,
+}) {
   canvas.save();
   canvas.translate(geometry.center.dx, geometry.center.dy);
   canvas.rotate(geometry.angle);
@@ -127,12 +134,13 @@ void paintNailFlat(
     width: geometry.width,
     height: geometry.height,
   );
-  final srcRect = Rect.fromLTWH(
-    0,
-    0,
-    image.width.toDouble(),
-    image.height.toDouble(),
-  );
+  final srcRect = textureRect ??
+      Rect.fromLTWH(
+        0,
+        0,
+        image.width.toDouble(),
+        image.height.toDouble(),
+      );
 
   canvas.drawImageRect(
     image,

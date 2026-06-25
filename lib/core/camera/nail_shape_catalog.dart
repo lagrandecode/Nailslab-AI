@@ -1,11 +1,9 @@
-import 'dart:convert';
-import 'dart:ui';
-
 import 'package:flutter/services.dart';
 
 import '../../models/nail_beauty_shape.dart';
+import 'nail_shape_svg_loader.dart';
 
-/// Loads compiled nail shape polygons from assets/nail_shapes/*.json.
+/// Loads nail shape polygons from assets/nail_shapes/*.svg templates.
 class NailShapeCatalog {
   NailShapeCatalog._();
 
@@ -27,19 +25,9 @@ class NailShapeCatalog {
       return cached;
     }
 
-    final path = 'assets/nail_shapes/${shape.name}_${role.assetStem}.json';
+    final path = 'assets/nail_shapes/${shape.name}_${role.assetStem}.svg';
     final raw = await rootBundle.loadString(path);
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    final points = decoded['points'] as List<dynamic>;
-    final out = points
-        .map((p) {
-          final map = p as Map<String, dynamic>;
-          return Offset(
-            (map['x'] as num).toDouble(),
-            (map['y'] as num).toDouble(),
-          );
-        })
-        .toList(growable: false);
+    final out = NailShapeSvgLoader.fromSvgText(raw);
     _cache[key] = out;
     return out;
   }

@@ -85,9 +85,9 @@ def sample_path(d: str, curve_steps: int = 12) -> list[tuple[float, float]]:
 
 
 def extract_path_d(svg_text: str) -> str:
-    match = re.search(r'd="([^"]+)"', svg_text, re.S)
+    match = re.search(r'<path[^>]*\sd="([^"]+)"', svg_text, re.S)
     if not match:
-        raise ValueError("No path d= found in SVG")
+        raise ValueError("No <path d=...> found in SVG")
     return re.sub(r"\s+", " ", match.group(1).strip())
 
 
@@ -132,9 +132,13 @@ def compile_svg(svg_path: Path) -> dict:
 
 
 def main() -> None:
-    svgs = sorted(SHAPES_DIR.glob("*.svg"))
+    svgs = sorted(
+        p
+        for p in SHAPES_DIR.glob("*.svg")
+        if not p.name.startswith("cherry_")
+    )
     if not svgs:
-        raise SystemExit(f"No SVG files in {SHAPES_DIR}")
+        raise SystemExit(f"No shape SVG files in {SHAPES_DIR}")
 
     for svg in svgs:
         data = compile_svg(svg)

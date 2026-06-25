@@ -6,21 +6,18 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/camera/hand_image_normalizer.dart';
 import '../../core/camera/image_layout_mapper.dart';
-import '../../core/camera/nail_shape_catalog.dart';
-import '../../core/camera/nail_shape_fitter.dart';
+import '../../core/camera/nail_texture_catalog.dart';
 import '../../core/camera/nail_polygon_painter.dart';
 import '../../core/config/nail_detect_config.dart';
 import '../../core/config/roboflow_config.dart';
 import '../../core/haptics/app_haptics.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/detected_nail.dart';
-import '../../models/nail_beauty_shape.dart';
 import '../../services/http_nail_detection_service.dart';
 import '../../services/nail_detection_exception.dart';
 import '../../services/nail_finger_matcher_service.dart';
 import '../../services/roboflow_nail_detection_service.dart';
 import '../../widgets/camera_bottom_panel.dart';
-import '../../widgets/nail_shape_picker.dart';
 
 /// Upload or snap a hand photo → detect nail polygons → tap to paint color.
 class HandUploadTryOnScreen extends StatefulWidget {
@@ -43,9 +40,10 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
   ui.Image? _decodedImage;
   List<DetectedNail> _nails = const [];
   final Set<String> _selectedIds = {};
+  final Set<String> _pngNailIds = {};
   final Map<String, Color> _nailColors = {};
   Color _activeColor = plainNailColors.first;
-  NailBeautyShape _activeShape = NailBeautyShape.natural;
+  ui.Image? _nailPlateTexture;
 
   bool _detecting = false;
   String? _error;
@@ -53,8 +51,22 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
   @override
   void initState() {
     super.initState();
-    NailShapeCatalog.instance.warmUp();
     _fingerMatcher.ensureInitialized();
+    _ensureNailPlateTexture();
+  }
+
+  Future<void> _ensureNailPlateTexture() async {
+    final image = await NailTextureCatalog.instance.nailPlateImage();
+    if (!mounted) {
+      return;
+    }
+    if (image != null) {
+      setState(() => _nailPlateTexture = image);
+    } else if (kDebugMode) {
+      debugPrint(
+        'Nail plate texture failed to load — check ${NailTextureCatalog.nailPlateAsset}',
+      );
+    }
   }
 
   @override
@@ -94,6 +106,7 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
       _detecting = true;
       _error = null;
       _selectedIds.clear();
+      _pngNailIds.clear();
       _nailColors.clear();
     });
 
@@ -103,6 +116,7 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
       if (mounted) {
         setState(() => _decodedImage = decoded);
       }
+      await _ensureNailPlateTexture();
 
       if (!NailDetectConfig.isConfigured && !RoboflowConfig.isConfigured) {
         throw NailDetectionException(
@@ -123,17 +137,13 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
         return;
       }
 
-      final shaped = await applyShapeToNails(labeled, _activeShape);
-      if (!mounted) {
-        return;
-      }
-
       setState(() {
-        _nails = shaped;
+        _nails = labeled;
         _detecting = false;
         _selectedIds
           ..clear()
-          ..addAll(shaped.map((n) => n.id));
+          ..addAll(labeled.map((n) => n.id));
+        _pngNailIds.clear();
       });
     } on NailDetectionException catch (e) {
       decoded?.dispose();
@@ -178,13 +188,39 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
     return frame.image;
   }
 
-  void _toggleSelection(String id) {
+  void _onTapNail(String id) {
     AppHaptics.heavy();
+    if (_nailPlateTexture == null) {
+      _ensureNailPlateTexture();
+    }
     setState(() {
-      if (_selectedIds.contains(id)) {
-        _selectedIds.remove(id);
+      if (_pngNailIds.contains(id)) {
+        _pngNailIds.remove(id);
       } else {
-        _selectedIds.add(id);
+        _pngNailIds.add(id);
+      }
+    });
+  }
+
+  void _toggleNailArtForSelection() {
+    AppHaptics.heavy();
+    if (_nailPlateTexture == null) {
+      _ensureNailPlateTexture();
+    }
+    final targets = _selectedIds.isEmpty
+        ? _nails.map((n) => n.id).toSet()
+        : _selectedIds;
+    if (targets.isEmpty) {
+      return;
+    }
+    final allPng = targets.every(_pngNailIds.contains);
+    setState(() {
+      for (final id in targets) {
+        if (allPng) {
+          _pngNailIds.remove(id);
+        } else {
+          _pngNailIds.add(id);
+        }
       }
     });
   }
@@ -205,25 +241,15 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
     });
   }
 
-  Future<void> _applyShape(NailBeautyShape shape) async {
-    if (_nails.isEmpty) {
-      setState(() => _activeShape = shape);
-      return;
-    }
-    setState(() => _activeShape = shape);
-    final shaped = await applyShapeToNails(_nails, shape);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _nails = shaped);
-  }
-
   void _clearSelectedColors() {
-    if (_selectedIds.isEmpty) {
+    final targets = _selectedIds.isEmpty
+        ? _nails.map((n) => n.id).toSet()
+        : _selectedIds;
+    if (targets.isEmpty) {
       return;
     }
     setState(() {
-      for (final id in _selectedIds) {
+      for (final id in targets) {
         _nailColors.remove(id);
       }
     });
@@ -264,10 +290,13 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
                     imageBytes: _imageBytes!,
                     nails: _nails,
                     selectedIds: _selectedIds,
+                    pngNailIds: _pngNailIds,
                     nailColors: _nailColors,
+                    nailPlateTexture: _nailPlateTexture ??
+                        NailTextureCatalog.instance.cachedNailPlate,
                     detecting: _detecting,
                     error: _error,
-                    onTapNail: _toggleSelection,
+                    onTapNail: _onTapNail,
                   ),
           ),
           if (_nails.isNotEmpty) ...[
@@ -275,9 +304,9 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Text(
                 _selectedIds.isEmpty
-                    ? 'Tap a nail to select, or pick a color for all nails'
+                    ? 'Natural nails — tap nail art or tap a nail to swap'
                     : _selectedIds.length == _nails.length
-                        ? 'All nails selected — pick a color'
+                        ? 'All selected — pick a color or nail art'
                         : '${_selectedIds.length} nail(s) selected',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.75),
@@ -286,19 +315,21 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-            NailShapePicker(
-              selectedShape: _activeShape,
-              onShapeSelected: _applyShape,
-            ),
             SizedBox(
               height: 88,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                itemCount: plainNailColors.length + 1,
+                itemCount: plainNailColors.length + 2,
                 separatorBuilder: (context, index) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   if (index == 0) {
+                    return _NailArtButton(
+                      selected: _pngNailIds.isNotEmpty,
+                      onTap: _toggleNailArtForSelection,
+                    );
+                  }
+                  if (index == 1) {
                     return _ColorDot(
                       color: Colors.transparent,
                       isClear: true,
@@ -306,7 +337,7 @@ class _HandUploadTryOnScreenState extends State<HandUploadTryOnScreen> {
                       onTap: _clearSelectedColors,
                     );
                   }
-                  final color = plainNailColors[index - 1];
+                  final color = plainNailColors[index - 2];
                   return _ColorDot(
                     color: color,
                     selected: color == _activeColor,
@@ -443,7 +474,9 @@ class _HandPhotoEditor extends StatelessWidget {
     required this.imageBytes,
     required this.nails,
     required this.selectedIds,
+    required this.pngNailIds,
     required this.nailColors,
+    required this.nailPlateTexture,
     required this.detecting,
     required this.error,
     required this.onTapNail,
@@ -453,7 +486,9 @@ class _HandPhotoEditor extends StatelessWidget {
   final Uint8List imageBytes;
   final List<DetectedNail> nails;
   final Set<String> selectedIds;
+  final Set<String> pngNailIds;
   final Map<String, Color> nailColors;
+  final ui.Image? nailPlateTexture;
   final bool detecting;
   final String? error;
   final ValueChanged<String> onTapNail;
@@ -472,7 +507,9 @@ class _HandPhotoEditor extends StatelessWidget {
                   viewSize: constraints.biggest,
                   nails: nails,
                   selectedIds: selectedIds,
+                  pngNailIds: pngNailIds,
                   nailColors: nailColors,
+                  nailPlateTexture: nailPlateTexture,
                 ),
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -488,7 +525,7 @@ class _HandPhotoEditor extends StatelessWidget {
                       viewSize: constraints.biggest,
                     );
                     final screenPolys = nails
-                        .map((n) => mapper.mapPolygon(n.polygon))
+                        .map((n) => mapper.mapPolygon(n.detectionPolygon))
                         .toList();
                     final index = hitTestNailIndex(
                       details.localPosition,
@@ -551,14 +588,18 @@ class _HandNailOverlayPainter extends CustomPainter {
     required this.viewSize,
     required this.nails,
     required this.selectedIds,
+    required this.pngNailIds,
     required this.nailColors,
+    required this.nailPlateTexture,
   });
 
   final ui.Image image;
   final Size viewSize;
   final List<DetectedNail> nails;
   final Set<String> selectedIds;
+  final Set<String> pngNailIds;
   final Map<String, Color> nailColors;
+  final ui.Image? nailPlateTexture;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -576,11 +617,31 @@ class _HandNailOverlayPainter extends CustomPainter {
     );
 
     for (final nail in nails) {
-      final screenPoly = mapper.mapPolygon(nail.polygon);
+      final screenPoly = mapper.mapPolygon(nail.detectionPolygon);
       final selected = selectedIds.contains(nail.id);
       final color = nailColors[nail.id];
+      final showPng = pngNailIds.contains(nail.id);
+      final texture =
+          nailPlateTexture ?? NailTextureCatalog.instance.cachedNailPlate;
 
-      if (color != null) {
+      if (showPng) {
+        if (texture != null) {
+          paintDetectedNailTexture(
+            canvas,
+            screenPoly,
+            texture,
+            tintColor: color,
+            selected: selected,
+          );
+        } else {
+          paintDetectedNailOutline(
+            canvas,
+            nail.copyWith(polygon: screenPoly),
+            selected: true,
+            hasColor: false,
+          );
+        }
+      } else if (color != null) {
         paintDetectedNailShader(
           canvas,
           screenPoly,
@@ -604,7 +665,42 @@ class _HandNailOverlayPainter extends CustomPainter {
         oldDelegate.viewSize != viewSize ||
         oldDelegate.nails != nails ||
         oldDelegate.selectedIds != selectedIds ||
-        oldDelegate.nailColors != nailColors;
+        oldDelegate.pngNailIds != pngNailIds ||
+        oldDelegate.nailColors != nailColors ||
+        oldDelegate.nailPlateTexture != nailPlateTexture;
+  }
+}
+
+class _NailArtButton extends StatelessWidget {
+  const _NailArtButton({
+    required this.selected,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? Colors.white : Colors.white24,
+            width: selected ? 2.5 : 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(
+          NailTextureCatalog.nailPlateAsset,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
   }
 }
 

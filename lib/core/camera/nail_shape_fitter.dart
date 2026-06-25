@@ -6,6 +6,9 @@ import '../../models/nail_beauty_shape.dart';
 import '../../models/nail_finger.dart';
 import 'nail_shape_catalog.dart';
 
+/// How much larger than detection the square nail template is drawn.
+const double kSquareNailFitScale = 1.38;
+
 class NailFrame {
   const NailFrame({
     required this.cuticle,
@@ -171,18 +174,27 @@ NailPlateRole roleForNail(DetectedNail nail, List<DetectedNail> all) {
 
 List<Offset> fitTemplateToPolygon(
   List<Offset> sourcePolygon,
-  List<Offset> template,
-) {
+  List<Offset> template, {
+  double scale = 1.0,
+}) {
   if (template.length < 3) {
     return sourcePolygon;
   }
 
   final frame = computeNailFrame(sourcePolygon);
+  final center = frame.cuticle + frame.axis * (frame.length * 0.5);
+  final nudgedCenter =
+      center + frame.axis * (frame.length * 0.05 * (scale - 1).clamp(0.0, 0.2));
+
   return template
       .map((p) {
         final y = p.dy * frame.length;
         final x = p.dx * frame.baseHalfWidth;
-        return frame.cuticle + frame.axis * y + frame.perp * x;
+        final point = frame.cuticle + frame.axis * y + frame.perp * x;
+        if (scale == 1.0) {
+          return point;
+        }
+        return nudgedCenter + (point - center) * scale;
       })
       .toList(growable: false);
 }
@@ -205,7 +217,11 @@ Future<DetectedNail> applyShapeToNail(
       role: role,
     );
     return nail.copyWith(
-      polygon: fitTemplateToPolygon(source, template),
+      polygon: fitTemplateToPolygon(
+        source,
+        template,
+        scale: kSquareNailFitScale,
+      ),
       shape: shape,
     );
   }
@@ -217,7 +233,11 @@ Future<DetectedNail> applyShapeToNail(
       );
 
   return nail.copyWith(
-    polygon: fitTemplateToPolygon(source, template),
+    polygon: fitTemplateToPolygon(
+      source,
+      template,
+      scale: kSquareNailFitScale,
+    ),
     shape: shape,
   );
 }
@@ -254,4 +274,48 @@ Future<List<DetectedNail>> applyShapeToNails(
     );
   }
   return out;
+}
+
+/// Perspective quad for texture warping (tip-left, tip-right, cuticle-right, cuticle-left).
+List<Offset> quadFromPolygon(List<Offset> polygon) {
+  if (polygon.length < 3) {
+    return polygon;
+  }
+
+  final frame = computeNailFrame(polygon);
+
+  var tipMinPerp = double.infinity;
+  var tipMaxPerp = -double.infinity;
+  var baseMinPerp = double.infinity;
+  var baseMaxPerp = -double.infinity;
+
+  for (final p in polygon) {
+    final rel = p - frame.cuticle;
+    final along = rel.dx * frame.axis.dx + rel.dy * frame.axis.dy;
+    final cross = rel.dx * frame.perp.dx + rel.dy * frame.perp.dy;
+    if (along > frame.length * 0.68) {
+      tipMinPerp = math.min(tipMinPerp, cross);
+      tipMaxPerp = math.max(tipMaxPerp, cross);
+    } else if (along < frame.length * 0.32) {
+      baseMinPerp = math.min(baseMinPerp, cross);
+      baseMaxPerp = math.max(baseMaxPerp, cross);
+    }
+  }
+
+  if (tipMinPerp == double.infinity) {
+    tipMinPerp = -frame.baseHalfWidth * 0.94;
+    tipMaxPerp = frame.baseHalfWidth * 0.94;
+  }
+  if (baseMinPerp == double.infinity) {
+    baseMinPerp = -frame.baseHalfWidth;
+    baseMaxPerp = frame.baseHalfWidth;
+  }
+
+  final tip = frame.cuticle + frame.axis * frame.length;
+  return [
+    tip + frame.perp * tipMinPerp,
+    tip + frame.perp * tipMaxPerp,
+    frame.cuticle + frame.perp * baseMaxPerp,
+    frame.cuticle + frame.perp * baseMinPerp,
+  ];
 }

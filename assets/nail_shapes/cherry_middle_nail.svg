@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 59" fill="none">
+  <!-- Middle cherry nail from assets/cherry2.png  edit fill colors per group -->
+  <g id="cherry-middle-nail">
+    <path
+      id="nail-base"
+      fill="#F1DBDD"
+      d="
+        M 12 7
+        L 28 7
+        C 32 7, 33 10, 33 14
+        L 33 44
+        C 33 49, 29 52, 20 52
+        C 11 52, 7 49, 7 44
+        L 7 14
+        C 7 10, 8 7, 12 7
+        Z
+      "
+    />
+
+    <g id="cherry-art">
+      <path
+        id="stem"
+        stroke="#2B1A12"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        fill="none"
+        d="M 16.5 34.5 C 17.5 28, 19 22, 20 19 C 21 22, 22.5 28, 23.5 34.5"
+      />
+
+      <ellipse id="leaf" cx="22.5" cy="21.5" rx="3.2" ry="5.2" fill="#2F6B3A" transform="rotate(18 22.5 21.5)" />
+
+      <circle id="cherry-left" cx="15.5" cy="37.5" r="5.2" fill="#C41230" />
+      <circle id="cherry-right" cx="24.5" cy="37.5" r="5.2" fill="#C41230" />
+
+      <ellipse id="cherry-left-highlight" cx="14.2" cy="36" rx="1.4" ry="1.8" fill="#FFFFFF" opacity="0.55" />
+      <ellipse id="cherry-right-highlight" cx="23.2" cy="36" rx="1.4" ry="1.8" fill="#FFFFFF" opacity="0.55" />
+    </g>
+  </g>
+</svg>

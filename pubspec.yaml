@@ -109,8 +109,10 @@ flutter:
     - assets/cherry2.png
     - assets/thumb3.png
     - assets/real.png
+    - assets/test.svg
     - assets/nails/
     - assets/nail_shapes/
+    - assets/nail_shapes/ChatGPT_Image_Jun_25__2026__12_23_51_AM-removebg-preview.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

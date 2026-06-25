@@ -1,8 +1,76 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../../models/detected_nail.dart';
+import 'nail_bed_geometry.dart' show isValidNailQuad, nailQuadPath;
+import 'nail_plate_balancer.dart';
+import 'nail_warp_painter.dart' show paintNailFlat, paintNailOnQuadMesh;
+
+/// Paints a nail plate PNG balanced on the detected nail bed (YouCam-style).
+void paintDetectedNailTexture(
+  Canvas canvas,
+  List<Offset> polygon,
+  ui.Image texture, {
+  Rect? contentRect,
+  Color? tintColor,
+  double tintOpacity = 0.84,
+  bool selected = false,
+}) {
+  if (polygon.length < 3) {
+    return;
+  }
+
+  final quad = balancedQuadFromPolygon(polygon);
+  if (!isValidNailQuad(quad)) {
+    return;
+  }
+
+  final src = contentRect ?? kNailPlateContentRect;
+  final clip = nailQuadPath(quad);
+  final flat = flatGeometryFromFrame(polygon);
+
+  canvas.save();
+  canvas.clipPath(clip);
+
+  // Flat fill under warp — visible even when mesh is weak on device.
+  paintNailFlat(canvas, texture, flat, textureRect: src);
+  paintNailOnQuadMesh(
+    canvas,
+    texture,
+    quad,
+    subdivisions: 6,
+    textureRect: src,
+  );
+
+  if (tintColor != null) {
+    canvas.drawPath(
+      clip,
+      Paint()
+        ..color = tintColor.withValues(alpha: tintOpacity)
+        ..blendMode = BlendMode.color,
+    );
+    canvas.drawPath(
+      clip,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.12)
+        ..blendMode = BlendMode.softLight,
+    );
+  }
+
+  canvas.restore();
+
+  if (selected) {
+    canvas.drawPath(
+      clip,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..color = const Color(0xFFE91E8C).withValues(alpha: 0.85)
+        ..isAntiAlias = true,
+    );
+  }
+}
 
 /// Paints polish color inside a nail polygon (YouCam / Roboflow style).
 void paintDetectedNailShader(
