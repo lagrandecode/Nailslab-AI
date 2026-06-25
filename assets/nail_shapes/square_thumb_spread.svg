@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 160" fill="none">
+  <!-- Thumb nail: spread hand (oblique side view). Cuticle bottom, flat square tip top. -->
+  <path
+    fill="#111111"
+    d="
+      M 18 150
+      C 18 143, 24 138, 32 138
+      L 68 138
+      C 76 138, 82 143, 82 150
+      L 82 154
+      L 82 26
+      C 82 18, 76 12, 68 12
+      L 32 12
+      C 24 12, 18 18, 18 26
+      L 18 154
+      Z
+    "
+  />
+</svg>

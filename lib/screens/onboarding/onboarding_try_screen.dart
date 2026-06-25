@@ -7,7 +7,7 @@ import '../../constants/try_on_strings.dart';
 import '../../core/config/openai_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/nail_style.dart';
-import '../../screens/camera/hand_camera_screen.dart';
+import '../../screens/upload/hand_upload_try_on_screen.dart';
 import '../../services/language_service.dart';
 import '../../services/nail_generation_service.dart';
 import '../../widgets/animated_onboarding_headline.dart';
@@ -41,18 +41,10 @@ class _OnboardingTryScreenState extends State<OnboardingTryScreen> {
     });
   }
 
-  Future<void> _openCamera() async {
-    final bytes = await Navigator.of(context).push<Uint8List>(
-      MaterialPageRoute(builder: (_) => const HandCameraScreen()),
+  Future<void> _openHandTryOn() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const HandUploadTryOnScreen()),
     );
-    if (bytes == null || !mounted) return;
-
-    setState(() {
-      _handBytes = bytes;
-      _resultBytes = null;
-      _selectedStyle = null;
-      _errorMessage = null;
-    });
   }
 
   Future<void> _generate() async {
@@ -145,7 +137,7 @@ class _OnboardingTryScreenState extends State<OnboardingTryScreen> {
                 child: _PhotoPreview(
                   bytes: displayBytes,
                   isGenerating: _isGenerating,
-                  onTapCamera: _openCamera,
+                  onTapCamera: _openHandTryOn,
                 ),
               ),
             ),
@@ -205,7 +197,7 @@ class _OnboardingTryScreenState extends State<OnboardingTryScreen> {
               child: SizedBox(
                 height: 54,
                 child: FilledButton(
-                  onPressed: _handBytes == null ? _openCamera : widget.onFinished,
+                  onPressed: _handBytes == null ? _openHandTryOn : widget.onFinished,
                   style: FilledButton.styleFrom(
                     backgroundColor: _handBytes != null
                         ? Colors.white

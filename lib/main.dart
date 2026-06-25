@@ -3,18 +3,31 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'constants/app_strings.dart';
+import 'core/config/nail_detect_config.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/upload/hand_upload_try_on_screen.dart';
 import 'services/language_service.dart';
 import 'widgets/haptic_scope.dart';
-import 'widgets/logo_placeholder.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // Optional in dev; use --dart-define=OPENAI_API_KEY when .env is absent.
+    assert(() {
+      if (!NailDetectConfig.isConfigured) {
+        debugPrint(
+          'NAIL_DETECT_URL missing in bundled .env — stop app and run flutter run again after editing .env',
+        );
+      }
+      return true;
+    }());
+  } catch (e) {
+    assert(() {
+      debugPrint('Could not load .env asset: $e');
+      return true;
+    }());
   }
   await LanguageService.instance.ensureLoaded();
   runApp(const NailLabApp());
@@ -90,9 +103,50 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
-      body: LogoPlaceholder(height: 160),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.back_hand_outlined, size: 64, color: AppColors.primary),
+                const SizedBox(height: 16),
+                const Text(
+                  'NailLab AI',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Upload a hand photo, detect nails, try any color.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.title.withValues(alpha: 0.65)),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const HandUploadTryOnScreen(),
+                        ),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: const Text('Try nail colors'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

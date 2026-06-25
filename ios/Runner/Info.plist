@@ -68,6 +68,13 @@
 		</array>
 		<key>NSCameraUsageDescription</key>
 		<string>NailLab AI needs camera access so you can snap a photo of your hand and try nail styles.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>NailLab AI needs photo library access so you can upload a hand photo to try nail colors.</string>
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
+		</dict>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

@@ -47,6 +47,7 @@ dependencies:
   http: ^1.4.0
   http_parser: ^4.1.2
   image: ^4.8.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -109,6 +110,7 @@ flutter:
     - assets/thumb3.png
     - assets/real.png
     - assets/nails/
+    - assets/nail_shapes/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

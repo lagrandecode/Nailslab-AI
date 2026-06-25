@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Thumb nail: facing camera (thumbs up). Wider, shorter, flat square tip. -->
+  <path
+    fill="#111111"
+    d="
+      M 24 108
+      C 24 100, 30 94, 38 94
+      L 82 94
+      C 90 94, 96 100, 96 108
+      L 96 112
+      L 96 28
+      C 96 20, 90 14, 82 14
+      L 38 14
+      C 30 14, 24 20, 24 28
+      L 24 112
+      Z
+    "
+  />
+</svg>
